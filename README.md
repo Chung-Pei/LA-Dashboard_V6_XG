@@ -37,6 +37,7 @@
 ## 目錄
 
 - [功能概覽](#功能概覽)
+- [設計特色](#設計特色)
 - [專案結構](#專案結構)
 - [技術架構](#技術架構)
 - [安全性架構](#安全性架構)
@@ -71,7 +72,7 @@
 | 相關性矩陣 | `L 行為關聯` | 學習行為指標間 Pearson 相關熱力圖 + 散點圖 |
 | 時序分析 | `L 時間行為` | 週別學習趨勢、考前學習時間、時段分布、24h 熱圖 |
 | LSA 序列分析 | `L LSA` | 學習行為序列有向圖（D3.js 力導向）、S-cluster 分組 |
-| 跨屆比較 | `L 交叉分析` | 行為群組與成績、行為軌跡、學習策略跨屆比較 |
+| 跨屆比較 | `L 交叉分析` | 行為群組與成績、行為軌跡、學習策略跨屆比較；另呈現 BAS AUC／XGBoost r 雙模型驗證指標並列比較 |
 | 早期預警 | `L 預警` | Option B 14 天後驗證預警系統，BAS（QMI 風險分層）與 XGBoost 雙模型並列（`xgb_probability` / `risk_level_xgb`），顯示 AUC／precision／recall／覆蓋率，逐生明細可匯出 CSV |
 
 ### 統一說明系統（Help Modal）
@@ -81,7 +82,19 @@
 - `main.js` 的 `CHART_INFO` 物件 + `attachInfoButtons()`（28 個圖表 hover popover）
 - `index.html` 內 5 個手寫說明面板（`bStatsHelp` / `warningHelp` / `rRadarInfo` / `r2Exclude` / `lsaHelp`），原分別由已整檔移除的 `ui-toggles.js` 與 `tab-behavior-lsa.js` 自建的 overlay 管理
 
-桌面版互動由 hover-preview 改為點擊觸發全螢幕 modal（`renderHelpModal()`），提供 ESC／點擊遮罩外部／✕ 按鈕三重關閉機制。載入順序需在 `chart-registry.js` 之後、`behavior-loader.js` 之前，確保 `window.toggleWarningHelp` 等相容殼層先於各 Tab 模組就位。
+桌面版互動由 hover-preview 改為點擊觸發全螢幕 modal（`renderHelpModal()`），提供 ESC／點擊遮罩外部／✕ 按鈕三重關閉機制。載入順序需在 `chart-registry.js` 之後、`behavior-loader.js` 之前，確保 `window.toggleWarningHelp` 等相容殼層先於各 Tab 模組就位。支援「白話摘要＋可展開完整說明」雙層顯示，統計公式等技術細節預設收合、按需展開；尚未撰寫摘要的既有條目維持原行為直接展開，不影響回溯相容性。
+
+---
+
+## 設計特色
+
+- **通過真實使用者驗證**：現行版本已由實際授課教師完成可用性評估；後續 UI/UX 調整方向以訪談與回饋為準，避免單方面臆測使用習慣
+- **漸進式揭露**：`filter-collapse-bar` 收合列涵蓋 7 處篩選面板，`help-modal.js` 的 `_INFO_CARD_TOGGLES` 統一管理多張可折疊資訊卡，降低畫面預設資訊密度
+- **篩選狀態記憶（隱私優先）**：`FilterMemory` 僅記住檢視偏好（學期、學制、顯示模式等安全子集合），刻意不記住班級／搜尋字串等資料範圍選擇，避免系所共用電腦洩漏前一位使用者的查詢內容
+- **無障礙語意基礎**：分頁採正確 `role="tab"`／`aria-*`，篩選滑桿具 `aria-label`
+- **行動裝置三段式適配**：600px／700px／900px 中斷點，篩選列於小螢幕自動改為直向堆疊
+- **空狀態設計意識**：loading overlay、多種「查無資料」狀態、樣本數不足的分群（如目前 S5）顯示專屬提示文字，而非靜默隱藏或留下空白卡片
+- **決策支援導向**：高風險報告同步呈現紅旗名單、處方性建議與 Top Risk Factors；跨屆比較頁另以 BAS AUC／XGBoost r 雙指標並列，方便比較兩套演算法的驗證效度
 
 ---
 
@@ -115,14 +128,15 @@
 │       └── pwacompat.min.js          # PWACompat（iOS Splash Screen 自動產生）
 ├── icons/                            # PWA 圖示（192、512、180、167、120 px）
 └── data/                             # 資料目錄（需自行提供，含個資請自行管理）
-    ├── scores.json                   # 成績資料（Panel A/C/D）
-    ├── behavior.json                 # 行為資料主檔
+    ├── data.json                     # 成績與 meta 資料（Panel A/C/D，由 etl.py 產出）
+    ├── behavior.json / .json.gz      # 行為資料主檔（含 gz 壓縮回退版）
     ├── radar_chart_data.json
-    ├── correlation_matrix.json
+    ├── correlation_matrix.json       # 含 lsa_transition（by_cluster／by_lsa_type，10_lsa_transition.py 產出）
     ├── quiz_behavior.json
     ├── time_distribution.json
-    ├── lsa_transition.json           # LSA 序列轉移矩陣（10_lsa_transition.py 產出）
-    └── at_risk_profile.json          # schema_version ≥ 3.0（by_semester 結構）
+    ├── at_risk_profile.json          # schema_version ≥ 3.0（by_semester 結構）
+    ├── cross_analysis.json           # 早期預警彙總（12_early_warning.py 產出）
+    └── warning_{學期}.json           # 逐學期早期預警明細
 ```
 
 ---
@@ -136,7 +150,7 @@
 - **資料層**：`behavior-loader.js` v3.0 負責 lazy load JSON（LRU 快取、gz 壓縮回退）；`filter-engine.js` v1.1.0 處理多維度篩選邏輯（無 DOM 依賴）
 - **圖表生命週期**：`chart-registry.js` 集中管理所有 Chart.js 實例的建立與銷毀，避免記憶體洩漏
 - **離線支援**：斷線時自動回退至最近快取的 data JSON
-- **快取版本**：`la-dash-v10-docs4-{BUILD_VERSION}`（於 `sw.js` 管理；`BUILD_VERSION` 與各 JS 檔 `?v=` cache-busting query string 同步遞增，兩者須同時更新才會觸發客戶端更新）
+- **快取版本**：`la-dash-v11-docs-cachefix-{BUILD_VERSION}`（於 `sw.js` 管理，App Shell 與資料快取分開命名）
 
 ---
 
@@ -199,8 +213,9 @@ worker-src  'self' blob:;
 
 `data/` 目錄下的 JSON 檔案需由後端 ETL 流程產出，**不隨本 repo 提供**（含個資，請自行管理）。
 
+- `data.json`（成績與 meta）由獨立腳本 `etl.py` 產出；`behavior.json` 等行為／風險資料由 `lms_etl.py`（16 個模組）產出，兩者為各自獨立的 ETL 流程
 - `at_risk_profile.json` 須符合 schema version ≥ 3.0（`by_semester` 多學期結構）
-- `lsa_transition.json` 由 `10_lsa_transition.py` 產出，包含 `by_cluster` 與 `by_lsa_type` 兩種分組
+- `correlation_matrix.json` 內的 `by_cluster`（R1–R5）與 `by_lsa_type`（S1–S5）分組由 `10_lsa_transition.py` 產出，非獨立檔案
 - 早期預警所需的 `cross_analysis.json` / `warning_{學期}.json` 由 `12_early_warning.py` 產出，包含 BAS（`bas_score`、`qmi`）與 XGBoost（`xgb_probability`、`risk_level_xgb`）雙模型欄位；`lms_etl.py` 預設以 `--enable-xgb` 啟用 XGBoost 訓練（可用 `--disable-xgb` 退回 BAS-only 模式）
 
 ---
@@ -255,6 +270,7 @@ python -m http.server 8080
 - **課程類型** → 依學制鎖定可選項目
 - **班級** → 動態依前述選項產生清單
 - **重修生開關**：可單獨切換是否納入統計
+- **篩選狀態記憶**：安全子集合（學期、學制、顯示模式等）以 `FilterMemory` 記住上次選擇；班級、搜尋字串等資料範圍選擇不記憶，降低共用電腦查詢外洩風險
 
 ---
 
@@ -270,7 +286,7 @@ python -m http.server 8080
 
 ## 版本控制
 
-本專案使用 Git 進行版本管理。JS 模組採內部版號追蹤（`filter-engine.js` v1.1.0、`behavior-loader.js` v3.0），Service Worker 快取以 `la-dash-v10-docs4` 命名管理。所有可版本化資源（`index.html` 中的模組化 JS、`sw.js` 的 `APP_SHELL`）共用單一 `BUILD_VERSION`（格式 `YYYYMMDDHHmm`，如 `202606301735`）作為 `?v=` cache-busting query string；更新部署時需同步遞增 `sw.js` 內的 `BUILD_VERSION` 與 `index.html` 各 `<script>` 標籤的 `?v=` 值，兩者不同步會導致 Service Worker 快取舊版模組。
+本專案使用 Git 進行版本管理。JS 模組採內部版號追蹤（`filter-engine.js` v1.1.0、`behavior-loader.js` v3.0），Service Worker 快取以 `la-dash-v11-docs-cachefix` 命名管理。所有可版本化資源（`index.html` 中的模組化 JS、`js/behavior-loader.js` 的 `DATA_VERSION`、`sw.js` 的 `BUILD_VERSION` 與 `APP_SHELL`）共用單一版本戳作為 `?v=` cache-busting query string；三處各自手動更新曾是重複性快取失效問題的根因，現統一透過 `update-dashboard-after-etl.ps1` 於單次執行內原子性同步三處版本戳，`APP_SHELL` 清單並依 `index.html` 當下的 `<script>` 標籤自動重建（而非手動維護陣列），執行後另跑 `node --check` 對全部 JS 檔案做語法驗證。
 
 ---
 
