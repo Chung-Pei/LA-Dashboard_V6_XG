@@ -858,6 +858,7 @@ function init() {
   initDSemFilter();
   populateCFilterSem();
   restoreFilterMemory();
+  _applyDProgramDisabledState();
   renderD();
   requestAnimationFrame(() => {
     attachHelpButtons();
@@ -3571,6 +3572,28 @@ function _applyAccentColors(root) {
   });
 }
 
+// BUGFIX-Q3（0725，依使用者要求後續處理）：
+// 「重修生」是學生個人層級標記（is_retaker），並非獨立班級；Panel D（跨屆比較）
+// 以「班級」為彙總單位，選了這個選項在資料模型上本來就不可能比對到任何列
+// （見 renderD() 內 filtered.length === 0 分支）。與其讓使用者選了才看到提示，
+// 不如直接在下拉選單把這個選項反灰、不可選，並用 title 說明原因。
+// 僅套用於 Panel D 的 #dFilterProgram；Panel A（#aFilterProgram）／Panel C
+// （#cFilterProgram）目前各自已有「查無資料」訊息（_showAEmptyHint／
+// _showCEmptyHint），是否也一併反灰待使用者確認後再處理，此處不動。
+function _applyDProgramDisabledState() {
+  const sel = document.getElementById('dFilterProgram');
+  if (!sel) return;
+  const opt = Array.from(sel.options).find(o => o.value === 'retake_student');
+  if (!opt) return;
+  opt.disabled = true;
+  opt.style.setProperty('color', 'var(--text-dim)'); // CSP-V5-FIX：走 style API 而非 inline style 字串
+  opt.title = '「重修生」是學生個人層級標記（隨班附讀於原班級），跨屆比較以班級彙總，無法呈現此類別的統計';
+  // 防禦：若先前（本次修正前）已被存到 FilterMemory / 由其他流程設成 retake_student，重置為 all
+  if (sel.value === 'retake_student') {
+    sel.value = 'all';
+  }
+}
+
 function renderD() {
   if (!DATA) return;
 
@@ -3607,6 +3630,20 @@ function renderD() {
         return false;
       });
 
+  // BUGFIX-Q2（0725 學制數卡片穿透式審查）：
+  // filtered 為空時（最常見於選「重修生」），不要讓後面的卡片/圖表用 0、– 把畫面
+  // 填滿、看起來像壞掉。比照本函式上方「未選學期」與 Panel A 對
+  // FilterEngine.checkEmptyResult() 空結果的既有訊息樣式，明確顯示原因並中止渲染。
+  if (filtered.length === 0) {
+    const progLabel = filterProg !== 'all' ? (PROGRAM_LABELS[filterProg] || filterProg) : '';
+    const msg = filterProg === 'retake_student'
+      ? '「重修生」是學生個人層級的標記（隨班附讀於原班級，例如護22A內的個別重修生），並非獨立班級，因此跨屆比較（依班級彙總）目前無法呈現此類別的統計數字。'
+      : `${progLabel ? progLabel + '：' : ''}所選條件組合在目前學期範圍內查無班級資料。`;
+    document.getElementById('dStats').innerHTML =
+      `<div class="empty-state ladash-empty-error">⚠ ${escapeHtml(msg)}</div>`;
+    return;
+  }
+
   const inclRetakerD = getIncludeRetaker('D');
   // filtered 的 class_summary row 已含 _nr 欄位
   // inclRetakerD=false 時讀 count_nr/avg_semester_nr 等；true 時讀 count/avg_semester 等
@@ -3639,7 +3676,15 @@ function renderD() {
   const avgRetake  = _wRetakeW > 0 ? (_wRetake / _wRetakeW)                   : null;
   const avgMidterm = _wMidW    > 0 ? (_wMid    / _wMidW).toFixed(2)           : null;
   const avgFinal   = _wFinW    > 0 ? (_wFin    / _wFinW).toFixed(2)           : null;
-  const programs = [...new Set(filtered.map(c => c.program))];
+  // BUGFIX-Q1（0725 學制數卡片穿透式審查）：
+  // filterProg !== 'all' 時，filtered 陣列裡的每一列（含透過 getBaseProgram
+  // 併入的跨屆重修班列）依篩選邏輯本就同屬使用者選定的單一學制，
+  // 不應該用列上原始的 c.program（可能是 'retake_class'）去重計數，
+  // 否則會把「同一學制底下的重修班」誤算成第二個學制。
+  // 只有 filterProg === 'all' 時才需要對照全部列的真實 program 分佈。
+  const programs = filterProg === 'all'
+    ? [...new Set(filtered.map(c => c.program))]
+    : (filtered.length > 0 ? [filterProg] : []);
 
   document.getElementById('dStats').innerHTML = `
     <div class="stat-card" data-ac="var(--accent)">
