@@ -29,6 +29,8 @@ const PrintPanel = (() => {
 
     { id: "cChartDist", label: "全體學生分布", tab: "C 學生/重修", type: "canvas", checked: false },
     { id: "chartAnomalyDensity", label: "異常密度分布", tab: "C 學生/重修", type: "canvas", checked: false },
+    { id: "chartRetakerTrend", label: "重修生成績跨學期趨勢", tab: "C 學生/重修", type: "canvas", checked: false },
+    { id: "chartRetakerPassRate", label: "重修生及格率趨勢", tab: "C 學生/重修", type: "canvas", checked: false },
     { id: "chartRetakerFirstDist", label: "重修生首修成績分布", tab: "C 學生/重修", type: "canvas", checked: false },
     { id: "slopeChart", label: "重修前後斜率圖", tab: "C 學生/重修", type: "svg", checked: false },
     { id: "chartDelta", label: "重修前後差異", tab: "C 學生/重修", type: "canvas", checked: false },

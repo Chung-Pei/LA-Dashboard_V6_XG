@@ -1346,8 +1346,9 @@ function renderA() {
     }
   });
 
-  renderNormalOverlay(cls, sem, sheet, type, program);
-  renderRegression(sem, sheet, type, program);
+  const aBaseRecs = getAFilteredRecords(sem, sheet, type, program);
+  renderNormalOverlay(cls, sem, sheet, type, program, aBaseRecs);
+  renderRegression(sem, sheet, type, program, aBaseRecs);
   renderVarianceBar(sem, sheet, program);
 
   const trendCard = document.getElementById('chartTrend')?.closest('.chart-card');
@@ -1736,8 +1737,8 @@ function renderCView() {
       return;
     }
     _hideCEmptyHint();
-    renderCAnomalyAndDist();
-    renderCStats();
+    renderCAnomalyAndDist(recs);
+    renderCStats(recs);
   } else {
     // BUGFIX-0719: renderCRetakeStats() 已移除 — 其輸出與 renderB() 內的 bStats 完全重複（同一份 getRetakerRecords() 計算結果）
     renderB();
@@ -1814,10 +1815,10 @@ function getCFilteredRecords() {
   return result;
 }
 
-function renderCAnomalyAndDist() {
+function renderCAnomalyAndDist(baseRecs) {
   renderAnomalyDensity();
 
-  const recs = getCFilteredRecords().filter(r => {
+  const recs = (baseRecs || getCFilteredRecords()).filter(r => {
     const s = r[cCurrentExam];
     return s != null && !isNaN(s);
   });
@@ -1853,8 +1854,8 @@ function renderCAnomalyAndDist() {
   });
 }
 
-function renderCStats() {
-  const recs = getCFilteredRecords().filter(r => r[cCurrentExam] != null);
+function renderCStats(baseRecs) {
+  const recs = (baseRecs || getCFilteredRecords()).filter(r => r[cCurrentExam] != null);
   const scores = recs.map(r => r[cCurrentExam]).filter(s => !isNaN(s));
   if (!scores.length) { document.getElementById('cStats').innerHTML = ''; return; }
   const avg = (scores.reduce((a,b)=>a+b,0)/scores.length).toFixed(1);
@@ -1891,6 +1892,95 @@ function setBType(type) {
   renderB();
 }
 
+// ── 重修生専属統計：跨學期趨勢／及格率趨勢（29-1 交接規格書 v0.4） ──
+function getRetakerSemesterTrend(examField) {
+  const bySem = new Map(DATA.meta.semesters.map(s => [s, []]));
+  for (const s of Object.values(DATA.students)) {
+    for (const r of s.records) {
+      if (r.type === 'theory' && r.is_retaker === true && bySem.has(r.semester)) {
+        bySem.get(r.semester).push(r);
+      }
+    }
+  }
+  const sems = [...DATA.meta.semesters].sort((a, b) => Number(a) - Number(b));
+  return sems.map(sem => {
+    const recs = bySem.get(sem) || [];
+    const withScore = recs.filter(r => r[examField] != null);
+    let sum = 0, passN = 0;
+    for (const r of withScore) {
+      sum += r[examField];
+      if (r[examField] >= 60) passN++;
+    }
+    const avg = withScore.length ? +(sum / withScore.length).toFixed(2) : null;
+    const passRate = withScore.length ? +((passN / withScore.length) * 100).toFixed(1) : null;
+    return { semester: sem, count: recs.length, countScored: withScore.length, avg, passRate };
+  });
+}
+
+function renderRetakerTrend(trend, sems) {
+  mkChart('chartRetakerTrend', {
+    type: 'line',
+    data: {
+      labels: sems.map(semLabel),
+      datasets: [{
+        label: '重修生 均線',
+        data: trend.map(t => t.avg),
+        borderColor: '#a0b0c0',
+        backgroundColor: '#a0b0c020',
+        tension: 0.3, fill: false, pointRadius: 5, pointHoverRadius: 7, spanGaps: true,
+      }],
+    },
+    options: {
+      ...CHART_DEFAULTS,
+      plugins: {
+        ...CHART_DEFAULTS.plugins,
+        annotation: { annotations: getEnvAnnotations(sems) },
+        tooltip: {
+          ...CHART_DEFAULTS.plugins.tooltip,
+          callbacks: { label: ctx => `${ctx.dataset.label}：${ctx.raw ?? '無資料'}` },
+        },
+      },
+      scales: {
+        x: { ...CHART_DEFAULTS.scales.x },
+        y: { ...CHART_DEFAULTS.scales.y, min: 0, max: 100,
+          title: { display: true, text: metricLabel(cCurrentExam), color: 'var(--text-dim)' } },
+      },
+    },
+  });
+}
+
+function renderRetakerPassRateTrend(trend, sems) {
+  mkChart('chartRetakerPassRate', {
+    type: 'line',
+    data: {
+      labels: sems.map(semLabel),
+      datasets: [{
+        label: '重修生 及格率',
+        data: trend.map(t => t.passRate),
+        borderColor: '#a0b0c0',
+        backgroundColor: '#a0b0c020',
+        tension: 0.3, fill: false, pointRadius: 4, spanGaps: true,
+      }],
+    },
+    options: {
+      ...CHART_DEFAULTS,
+      plugins: {
+        ...CHART_DEFAULTS.plugins,
+        annotation: { annotations: getEnvAnnotations(sems) },
+        tooltip: {
+          ...CHART_DEFAULTS.plugins.tooltip,
+          callbacks: { label: ctx => `${ctx.dataset.label}：${ctx.raw ?? '–'}%` },
+        },
+      },
+      scales: {
+        x: { ...CHART_DEFAULTS.scales.x },
+        y: { ...CHART_DEFAULTS.scales.y, min: 0, max: 100,
+          title: { display: true, text: '及格率 %', color: 'var(--text-dim)' } },
+      },
+    },
+  });
+}
+
 function renderB() {
   const retakers = getRetakerRecords();
   const type = document.getElementById('bFilterType').value;
@@ -1924,6 +2014,10 @@ function renderB() {
     </div>
   `;
 
+  const retakerSems = [...DATA.meta.semesters].sort((a, b) => Number(a) - Number(b));
+  const retakerTrend = getRetakerSemesterTrend(cCurrentExam);
+  renderRetakerTrend(retakerTrend, retakerSems);
+  renderRetakerPassRateTrend(retakerTrend, retakerSems);
   renderSlope(retakers);
   renderDelta(allDeltas);
   renderQuadrant();
@@ -2267,19 +2361,24 @@ function renderProfile(sid) {
 // ══════════════════════════════════════════════════════════
 // PANEL A — 新增圖表
 // ══════════════════════════════════════════════════════════
-function renderNormalOverlay(cls, sem, sheet, type = 'all', program = 'all') {
+function getAFilteredRecords(sem, sheet, type, program) {
+  const inclRetaker = getIncludeRetaker('A');
+  const result = [];
+  Object.values(DATA.students).forEach(s => s.records.forEach(r => {
+    if (!inclRetaker && r.is_retaker) return;
+    if (program !== 'all' && classInfo(r.sheet_name || '', r.semester).program !== program) return;
+    if (recordMatchesClass(r, sem, sheet, type)) result.push({ ...r, masked: s.name_masked });
+  }));
+  return result;
+}
+
+function renderNormalOverlay(cls, sem, sheet, type = 'all', program = 'all', baseRecs) {
   if (!cls) return;
   const dist = cls.score_distribution;
   const n = cls.count || 1;
   const mu = cls.avg_semester || 70;
-  const inclRetaker = getIncludeRetaker('A');
-  const scores = [];
-  Object.values(DATA.students).forEach(s => s.records.forEach(r => {
-    if (!inclRetaker && r.is_retaker) return;
-    if (program !== 'all' && classInfo(r.sheet_name || '', r.semester).program !== program) return;
-    if (recordMatchesClass(r, sem, sheet, type) &&
-        r.semester_score != null) scores.push(r.semester_score);
-  }));
+  const recs = baseRecs || getAFilteredRecords(sem, sheet, type, program);
+  const scores = recs.filter(r => r.semester_score != null).map(r => r.semester_score);
   const sd = scores.length > 1
     ? Math.sqrt(scores.reduce((a,v)=>a+(v-mu)**2,0)/(scores.length-1))
     : 10;
@@ -2312,15 +2411,11 @@ function renderNormalOverlay(cls, sem, sheet, type = 'all', program = 'all') {
   });
 }
 
-function renderRegression(sem, sheet, type = 'all', program = 'all') {
-  const pts = [];
-  const inclRetaker = getIncludeRetaker('A');
-  Object.values(DATA.students).forEach(s => s.records.forEach(r => {
-    if (!inclRetaker && r.is_retaker) return;
-    if (program !== 'all' && classInfo(r.sheet_name || '', r.semester).program !== program) return;
-    if (recordMatchesClass(r, sem, sheet, type) && r.midterm!=null && r.final!=null)
-      pts.push({ x: r.midterm, y: r.final, m: s.name_masked });
-  }));
+function renderRegression(sem, sheet, type = 'all', program = 'all', baseRecs) {
+  const recs = baseRecs || getAFilteredRecords(sem, sheet, type, program);
+  const pts = recs
+    .filter(r => r.midterm != null && r.final != null)
+    .map(r => ({ x: r.midterm, y: r.final, m: r.masked }));
   if (pts.length < 3) { document.getElementById('aRsqLabel').textContent=''; return; }
 
   const n=pts.length, sx=pts.reduce((a,p)=>a+p.x,0), sy=pts.reduce((a,p)=>a+p.y,0);
