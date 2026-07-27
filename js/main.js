@@ -19,6 +19,28 @@ function escapeHtml(s) {
 const safeSvgAttr = escapeHtml;
 
 // ══════════════════════════════════════════════════════════
+// UTILITIES — 共用防抖動 (debounce) 工具（31 號規劃書）
+// ══════════════════════════════════════════════════════════
+// 用途：cSearch／cSearchRetake 輸入框，避免每個按鍵都立即觸發完整搜尋＋渲染。
+// 回傳函式具備 .cancel()，供「清空搜尋框」時取消尚未執行的舊查詢，避免舊查詢在
+// 清空後才延遲觸發、讓已清空的畫面又跳出過期結果。
+// 定位：UX 互動調整（避免下拉結果快速輸入時逐鍵閃動），非效能優化——單次搜尋掃描
+// 本身已在 1-5ms 級（見 30 號規格書待辦A，已決議暫不處理索引結構）。
+// 放置於檔案最上方：本函式與常數被 onCRetakeSearch（PANEL C 整合控制器區塊）等
+// 位於檔案較前段的程式碼使用，const 宣告必須早於所有使用點，否則會出現
+// 「Cannot access before initialization」的暫時死區（TDZ）錯誤。
+function debounce(fn, delay) {
+  let timer = null;
+  function debounced(...args) {
+    clearTimeout(timer);
+    timer = setTimeout(() => { timer = null; fn.apply(this, args); }, delay);
+  }
+  debounced.cancel = () => { clearTimeout(timer); timer = null; };
+  return debounced;
+}
+const SEARCH_DEBOUNCE_MS = 150;
+
+// ══════════════════════════════════════════════════════════
 // CSP-COMPLIANT SVG UTILITY STYLES
 // .ladash-svg-block → replaces SVG style="display:block"
 // .ladash-svg-responsive → responsive SVG; height/min-width applied via DOM API post-process
@@ -1061,7 +1083,7 @@ function updateCompareFilter(sem, sheet, type = 'all', includeRetaker = true, pr
 // ══════════════════════════════════════════════════════════
 let _aFilterSnapshot = null;
 
-function onAFilterChange(changedField) {
+function onAFilterChange(changedField, skipRender) {
   const sem       = document.getElementById('aFilterSem').value;
   const program   = document.getElementById('aFilterProgram').value;
 
@@ -1093,7 +1115,7 @@ function onAFilterChange(changedField) {
     return;
   }
   _hideAEmptyHint();
-  renderA();
+  if (!skipRender) renderA();
 }
 
 function _applyProgramDisabledState(sem) {
@@ -1421,11 +1443,11 @@ function renderTrend() {
 // ══════════════════════════════════════════════════════════
 // PANEL B
 // ══════════════════════════════════════════════════════════
-function setBMode(mode) {
+function setBMode(mode, skipRender) {
   bMode = mode;
   document.getElementById('modeBySheet').classList.toggle('active', mode === 'sheet');
   document.getElementById('modeByStudent').classList.toggle('active', mode === 'student');
-  renderB();
+  if (!skipRender) renderB();
 }
 
 function getRetakerRecords() {
@@ -1521,7 +1543,7 @@ function _applyCProgramDisabledState(sem) {
   if (disabled.includes(sel.value)) sel.value = 'all';
 }
 
-function onCGeneralFilterChange(changedField) {
+function onCGeneralFilterChange(changedField, skipRender) {
   const sem     = document.getElementById('cFilterSem').value;
   const program = document.getElementById('cFilterProgram').value;
 
@@ -1557,10 +1579,10 @@ function onCGeneralFilterChange(changedField) {
   _syncRetakerBtn('C');
 
   _hideCEmptyHint();
-  renderCView();
+  if (!skipRender) renderCView();
 }
 
-function setCType(type) {
+function setCType(type, skipRender) {
   // Guard: programs without lab courses cannot switch to practicum
   if (type === 'practicum') {
     const prog = document.getElementById('cFilterProgram')?.value || 'all';
@@ -1572,19 +1594,19 @@ function setCType(type) {
     const map = { cTypeAll:'all', cTypeTheory:'theory', cTypePrac:'practicum' };
     document.getElementById(id)?.classList.toggle('active', map[id] === type);
   });
-  renderCView();
+  if (!skipRender) renderCView();
 }
 
-function setCPass(pass) {
+function setCPass(pass, skipRender) {
   cCurrentPass = pass;
   ['cPassAll','cPassPass','cPassFail'].forEach(id => {
     const map = { cPassAll:'all', cPassPass:'pass', cPassFail:'fail' };
     document.getElementById(id)?.classList.toggle('active', map[id] === pass);
   });
-  renderCView();
+  if (!skipRender) renderCView();
 }
 
-function setCExam(metric) {
+function setCExam(metric, skipRender) {
   cCurrentExam = metric;
   ['cExamSem','cExamMid','cExamFin','cExamSemR','cExamMidR','cExamFinR'].forEach(id => {
     document.getElementById(id)?.classList.remove('active');
@@ -1595,7 +1617,7 @@ function setCExam(metric) {
     final:          ['cExamFin','cExamFinR'],
   };
   (map[metric] || []).forEach(id => document.getElementById(id)?.classList.add('active'));
-  renderCView();
+  if (!skipRender) renderCView();
 }
 
 function resetCFilters() {
@@ -1607,6 +1629,7 @@ function resetCFilters() {
     document.getElementById('bStats').innerHTML = '';
     const hint = document.getElementById('cRetakeSearchHint');
     if (hint) hint.style.setProperty('display', '');
+    _syncCProfileVisibility();
   } else {
     _resetCGeneralFilters();
     renderCView();
@@ -1671,21 +1694,35 @@ function onCRetakeSearch() {
   const hint = document.getElementById('cRetakeSearchHint');
 
   if (q.length < 2) {
+    _debouncedRetakeSearchRun.cancel(); // 取消尚未執行的舊查詢，避免清空後又延遲跳出結果
     if (box) { box.classList.remove('open'); box.innerHTML = ''; }
     if (hint) hint.style.setProperty('display', '');
+    const pw = document.getElementById('profileWrap');
+    if (pw && pw.innerHTML.trim().length > 0) {
+      pw.innerHTML = '';
+      renderCView();
+    }
     return;
   }
+  // hint 隱藏維持即時：這是「輸入是否已達最短長度」的狀態回饋，非搜尋結果本身，
+  // 不應隨防抖延遲（31 號規劃書 §2.4 決議）。
   if (hint) hint.style.setProperty('display', 'none');
 
+  _debouncedRetakeSearchRun(q);
+}
+
+function _retakeSearchRun(q) {
+  const box = document.getElementById('searchResultsRetake');
   const results = [];
   const pat = q.replace(/\*/g, '.*').replace(/\?/g, '.');
   let re;
   try { re = new RegExp(pat, 'i'); } catch { re = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), 'i'); }
 
-  Object.entries(DATA.students).forEach(([sid, s]) => {
-    if (!s.records.some(r => r.is_retaker)) return;
-    if (re.test(sid) || re.test(s.name_masked || '')) results.push({ id: sid, masked: s.name_masked });
-  });
+  const retakerPool = _getRetakerStudentsList();
+  for (let i = 0; i < retakerPool.length; i++) {
+    const s = retakerPool[i];
+    if (re.test(s.id) || re.test(s.masked || '')) results.push(s);
+  }
 
   if (!box) return;
   if (!results.length) {
@@ -1702,6 +1739,7 @@ function onCRetakeSearch() {
   ).join('');
   box.classList.add('open');
 }
+const _debouncedRetakeSearchRun = debounce(_retakeSearchRun, SEARCH_DEBOUNCE_MS);
 
 function selectRetakeStudent(sid) {
   const inp = document.getElementById('cSearchRetake');
@@ -1721,6 +1759,28 @@ function _hideCEmptyHint() {
   if (el) el.style.setProperty('display', 'none');
 }
 
+// 個案模式（搜尋學號展開 profileWrap）時，隱藏全體/群體總覽（非個案專屬）的統計卡與圖表，
+// 簡化版面、避免與個案軌跡混淆；清除搜尋或重設條件後（profileWrap 清空）恢復顯示。
+// 顯示→隱藏方向永遠安全（圖表已在可見狀態下渲染過，隱藏不影響其內容）；
+// 隱藏→顯示方向重用既有 resizeChartsInCard()（含 canvas resize 與 slopeChart SVG 依新寬度重繪），
+// 避免圖表在容器 display:none 期間被重新渲染導致尺寸歸零。
+function _syncCProfileVisibility() {
+  const pw = document.getElementById('profileWrap');
+  const inCase = !!(pw && pw.innerHTML.trim().length > 0);
+  if (cCurrentView === 'general') {
+    const panel = document.getElementById('cPanelGeneral');
+    const wasHidden = panel.style.display === 'none';
+    document.getElementById('cStats').style.setProperty('display', inCase ? 'none' : '');
+    panel.style.setProperty('display', inCase ? 'none' : '');
+    if (wasHidden && !inCase) resizeChartsInCard(panel);
+  } else {
+    const panel = document.getElementById('cPanelRetake');
+    const wasHidden = panel.style.display === 'none';
+    panel.style.setProperty('display', inCase ? 'none' : '');
+    if (wasHidden && !inCase) resizeChartsInCard(panel);
+  }
+}
+
 function renderCView() {
   if (!DATA) return;
   if (cCurrentView === 'general') {
@@ -1734,6 +1794,7 @@ function renderCView() {
       _showCEmptyHint(`${hint} 無符合資料`);
       document.getElementById('cStats').innerHTML = '';
       updateFilterSummary('C');
+      _syncCProfileVisibility();
       return;
     }
     _hideCEmptyHint();
@@ -1745,6 +1806,7 @@ function renderCView() {
     renderRetakerFirstDist();
   }
   updateFilterSummary('C');
+  _syncCProfileVisibility();
 }
 
 let _cPanelInited = false;
@@ -1757,7 +1819,7 @@ function initCPanel() {
     populateCFilterSem();
     _applyCProgramDisabledState('all');
     _syncRetakerBtn('C');
-    setBType('theory');
+    setBType('theory', true); // skipRender：此時 cCurrentView 仍為 'general'，#cPanelRetake 隱藏，渲染會被丟棄；實際可見畫面由下方 renderCView() 統一渲染
     _resetCGeneralFilters();
     _restoreCFilterMemory();
     _cPanelInited = true;
@@ -1884,12 +1946,12 @@ function renderCStats(baseRecs) {
   `;
 }
 
-function setBType(type) {
+function setBType(type, skipRender) {
   const sel = document.getElementById('bFilterType');
   if (sel) sel.value = type;
   ['bTypeTheory','bTypePracticum'].forEach(id => document.getElementById(id)?.classList.remove('active'));
   document.getElementById(type === 'theory' ? 'bTypeTheory' : 'bTypePracticum')?.classList.add('active');
-  renderB();
+  if (!skipRender) renderB();
 }
 
 // ── 重修生専属統計：跨學期趨勢／及格率趨勢（29-1 交接規格書 v0.4） ──
@@ -2185,14 +2247,60 @@ function renderQuadrant() {
 // ══════════════════════════════════════════════════════════
 // PANEL C — 學生搜尋
 // ══════════════════════════════════════════════════════════
+// （共用防抖動工具 debounce()／SEARCH_DEBOUNCE_MS 已搬至檔案最上方 UTILITIES 區塊，
+//  避免 const 在檔案中「先使用、後宣告」造成的暫時死區 ReferenceError——
+//  onCRetakeSearch() 位於本節之前的區塊，若常數宣告在此處會太晚。）
+
+// 個案搜尋（一般/重修）快取：Object.entries(DATA.students) 對 10,233 筆學生的字典模式物件
+// 重建成本很高（實測每次呼叫約 6-9ms），且搜尋輸入框每次鍵入都會呼叫一次；
+// 全體學生清單與重修生子集皆於首次搜尋時惰性建置一次並快取，DATA 於單一頁面工作階段
+// 內只在初次載入時賦值一次（列印功能雖會暫時替換 DATA，但同步執行且不觸發搜尋，
+// 不影響快取正確性）。
+let _flatStudentsCache = null;
+function _getFlatStudents() {
+  if (!_flatStudentsCache) {
+    _flatStudentsCache = Object.entries(DATA.students).map(([sid, data]) => ({ sid, data }));
+  }
+  return _flatStudentsCache;
+}
+
+let _retakerStudentsCache = null;
+function _getRetakerStudentsList() {
+  if (!_retakerStudentsCache) {
+    _retakerStudentsCache = _getFlatStudents()
+      .filter(({ data }) => data.records.some(r => r.is_retaker))
+      .map(({ sid, data }) => ({ id: sid, masked: data.name_masked }));
+  }
+  return _retakerStudentsCache;
+}
+
 function searchStudent() {
   const q = document.getElementById('cSearch').value.trim();
   const box = document.getElementById('searchResults');
 
-  if (q.length < 2) { box.classList.remove('open'); return; }
+  if (q.length < 2) {
+    _debouncedSearchStudentRun.cancel(); // 取消尚未執行的舊查詢，避免清空後又延遲跳出結果
+    box.classList.remove('open');
+    const pw = document.getElementById('profileWrap');
+    if (pw && pw.innerHTML.trim().length > 0) {
+      pw.innerHTML = '';
+      pw.style.setProperty('margin-bottom', '');
+      const hint = document.getElementById('cSearchHint');
+      if (hint) hint.style.setProperty('display', '');
+      renderCView();
+    }
+    return;
+  }
 
+  _debouncedSearchStudentRun(q);
+}
+
+function _searchStudentRun(q) {
+  const box = document.getElementById('searchResults');
   const results = [];
-  for (const [sid, data] of Object.entries(DATA.students)) {
+  const flatStudents = _getFlatStudents();
+  for (let i = 0; i < flatStudents.length; i++) {
+    const { sid, data } = flatStudents[i];
     const masked = data.name_masked;
     if (sid.includes(q) || masked.includes(q)) {
       const rCount = data.records.length;
@@ -2217,11 +2325,12 @@ function searchStudent() {
       </div>
     `).join('');
     box.querySelectorAll('.search-item[data-sid]').forEach(el => {
-      el.addEventListener('click', () => selectStudent(el.dataset.sid));
+      el.addEventListener('click', () => { selectStudent(el.dataset.sid); renderCView(); });
     });
   }
   box.classList.add('open');
 }
+const _debouncedSearchStudentRun = debounce(_searchStudentRun, SEARCH_DEBOUNCE_MS);
 
 function selectStudent(sid) {
   document.getElementById('searchResults').classList.remove('open');
@@ -3267,14 +3376,14 @@ function classifyProgram(sheetName, semester) {
 // ══════════════════════════════════════════════════════════
 // PANEL D — 跨屆比較
 // ══════════════════════════════════════════════════════════
-function setDView(v) {
+function setDView(v, skipRender) {
   dView = v;
   document.getElementById('dViewMerge').classList.toggle('active', v === 'merge');
   document.getElementById('dViewClass').classList.toggle('active', v === 'class');
-  renderD();
+  if (!skipRender) renderD();
 }
 
-function setDType(t) {
+function setDType(t, skipRender) {
   dType = t;
   document.getElementById('dTypeTheory').classList.toggle('active', t === 'theory');
   document.getElementById('dTypePracticum').classList.toggle('active', t === 'practicum');
@@ -3289,19 +3398,19 @@ function setDType(t) {
     }
   });
   if (noMidFin && dMetric !== 'semester_score') {
-    setDMetric('semester_score');
+    setDMetric('semester_score', skipRender);
     return;
   }
-  renderD();
+  if (!skipRender) renderD();
 }
 
-function setDMetric(m) {
+function setDMetric(m, skipRender) {
   dMetric = m;
   ['semester_score','midterm','final'].forEach(k => {
     const map = { semester_score:'dMetricSem', midterm:'dMetricMid', final:'dMetricFin' };
     document.getElementById(map[k]).classList.toggle('active', k === m);
   });
-  renderD();
+  if (!skipRender) renderD();
 }
 
 function metricLabel(m) {
@@ -3468,7 +3577,7 @@ function initDSemFilter() {
   _updateDSemRangeLabel();
 }
 
-function setDSemMode(mode) {
+function setDSemMode(mode, skipRender) {
   dSemMode = mode;
   document.getElementById('dSemModeRange').classList.toggle('active', mode === 'range');
   document.getElementById('dSemModeMulti').classList.toggle('active', mode === 'multi');
@@ -3492,7 +3601,7 @@ function setDSemMode(mode) {
   document.getElementById('dProgramBarWrap').style.setProperty('display', mode === 'multi' ? 'block' : 'none');
   document.getElementById('dPassRateWrap').style.setProperty('display', mode === 'range' ? 'block' : 'none');
 
-  renderD();
+  if (!skipRender) renderD();
 }
 
 function onDSemRangeChange(event) {
@@ -4463,6 +4572,14 @@ const FilterMemory = (() => {
 //   aFilterSheet, aTrendSheet, cSearch, cSearchRetake
 
 // Panel A／Panel D 還原（於 init() 內、renderD() 之前呼叫）
+// 效能備註（穿透式審查四）：以下所有還原呼叫皆傳入 skipRender=true。此函式在每次
+// 網頁載入時都會執行（loadData()→restoreFilterMemory()→renderD()），若使用者曾存過
+// 篩選記憶，過去每個還原的 setter 都會各自無條件渲染一次，最多可達 6 次
+// （aRestored 分支 1 次 + setDSemMode/setDType/setDView/setDMetric 最多 4 次 +
+// dType==='practicum' 修正分支 1 次），但這些中間渲染全部會被本函式呼叫結束後
+// 緊接的 renderD()（loadData 內）或使用者之後切到 Panel A 時 switchTab('A') 保證的
+// renderA() 蓋掉，100% 是丟棄不用的運算。此處只還原狀態變數與下拉選單/按鈕視覺
+// 樣式，最終畫面內容不變。
 function restoreFilterMemory() {
   let aRestored = false, dRestored = false;
   const restore = (id, applyFn) => {
@@ -4477,21 +4594,26 @@ function restoreFilterMemory() {
   // 僅在確實有還原到值時，才比照使用者手動切換學期的既有邏輯重新驗證
   // 學制/課別互斥鎖定（避免還原出「不可能存在」的組合）；首次使用（無記錄）
   // 完全不觸發此段，行為與異動前逐字相同。
-  if (aRestored) onAFilterChange('semester');
+  if (aRestored) onAFilterChange('semester', true);
 
   if (restore('dFilterProgram', v => { const el = document.getElementById('dFilterProgram'); if (el) el.value = v; })) dRestored = true;
-  if (restore('setDSemMode', v => setDSemMode(v))) dRestored = true;
-  if (restore('setDType',    v => setDType(v)))   dRestored = true;
-  if (restore('setDView',    v => setDView(v)))   dRestored = true;
-  if (restore('setDMetric',  v => setDMetric(v))) dRestored = true;
+  if (restore('setDSemMode', v => setDSemMode(v, true))) dRestored = true;
+  if (restore('setDType',    v => setDType(v, true)))   dRestored = true;
+  if (restore('setDView',    v => setDView(v, true)))   dRestored = true;
+  if (restore('setDMetric',  v => setDMetric(v, true))) dRestored = true;
   if (dRestored) {
     // 實驗課無期中／期末成績，還原組合若衝突則回退為學期成績（比照 setDType 既有互斥邏輯）
-    if (dType === 'practicum' && dMetric !== 'semester_score') setDMetric('semester_score');
+    if (dType === 'practicum' && dMetric !== 'semester_score') setDMetric('semester_score', true);
     _syncRetakerBtn('D');
   }
 }
 
 // Panel C（含重補修生子區塊）還原（於 initCPanel() 首次進入、_resetCGeneralFilters() 之後呼叫）
+// 效能備註（穿透式審查四）：以下所有 restore() 呼叫皆傳入 skipRender=true——還原當下
+// initCPanel() 尚未執行到自己結尾的 renderCView()，此處任何中間渲染都會被該最終呼叫
+// 覆蓋（若還原到 retake 相關值，甚至是渲染進當下必為隱藏狀態的 #cPanelRetake），
+// 100% 是丟棄不用的運算。只還原狀態變數與按鈕/下拉選單的視覺樣式，渲染统一交給
+// initCPanel() 結尾那一次 renderCView() 負責，最終畫面內容不變。
 function _restoreCFilterMemory() {
   let cRestored = false;
   const restore = (id, applyFn) => {
@@ -4504,13 +4626,13 @@ function _restoreCFilterMemory() {
   if (restore('cFilterProgram', v => { const el = document.getElementById('cFilterProgram'); if (el) el.value = v; })) cRestored = true;
   // 僅在確實有還原到值時，才比照使用者手動切換學期的既有邏輯重新驗證
   // （含學制/課別鎖定提示、重修生開關同步），首次使用（無記錄）行為不變。
-  if (cRestored) onCGeneralFilterChange('semester');
+  if (cRestored) onCGeneralFilterChange('semester', true);
 
-  restore('setBMode', v => setBMode(v));
-  restore('setBType', v => setBType(v));
-  restore('setCType', v => setCType(v));
-  restore('setCPass', v => setCPass(v));
-  restore('setCExam', v => setCExam(v));
+  restore('setBMode', v => setBMode(v, true));
+  restore('setBType', v => setBType(v, true));
+  restore('setCType', v => setCType(v, true));
+  restore('setCPass', v => setCPass(v, true));
+  restore('setCExam', v => setCExam(v, true));
 }
 
 // ══════════════════════════════════════════════════════════
