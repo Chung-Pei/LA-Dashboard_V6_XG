@@ -2612,53 +2612,98 @@ async function buildBehaviorClassificationHtml(anonId, sem) {
     return `<div class="bc-nodata">目前資料尚不足以判斷學習行為分型</div>`;
   }
 
+  // BUGFIX-A 追蹤（docs38）：使用者以無痕瀏覽器／新裝置測試後排除快取問題，
+  // 且回報為普遍現象（非特定學生學期）。關鍵線索：①②的次要說明文字
+  // （本分群歷史不及格率…）同樣來自 crossData.by_r_cluster/overall，
+  // 若這兩者能正常顯示，代表 cross_analysis.json 本身確實有成功載入
+  // （並非 fetch 失敗——fetch 失敗會被上層 catch 攔截，整面板顯示「載入
+  // 失敗」，而非①②正常＋③④空白的樣式）。因此最可能的成因是：實際部署
+  // 中的 cross_analysis.json 版本落後於 2026-07-29 schema 1.3（該版才新增
+  // student_classification 欄位），即該欄位在整份 JSON 中「結構性缺席」，
+  // 而非本函式邏輯或個別學生鍵值有誤。以下明確區分「整份欄位缺席」
+  // （scFieldMissing＝真：系統性問題，需重新部署資料）與「欄位存在但查
+  // 無此筆記錄」（scFieldMissing＝假：個案，如92314020/1112該筆無期中期
+  // 末成績的真實邊界案例），兩者訊息與樣式不同，避免混淆。
+  const scFieldMissing = !crossData.student_classification
+    || typeof crossData.student_classification !== 'object';
+
   const byR = crossData.by_r_cluster || {};
   const byS = crossData.by_s_cluster || {};
   const overall = crossData.overall || {};
 
-  const rRow = rCluster
-    ? `<div class="bc-row">
-         <div class="bc-row-title">① 資源使用R分群：${escapeHtml(rCluster)} ${escapeHtml(BC_R_LABELS[rCluster] || '')}</div>
-         <div class="bc-row-sub">本分群歷史不及格率 ${_bcPct(byR[rCluster]?.fail_rate_final)}（全體 ${_bcPct(overall.fail_rate_final)}）</div>
-       </div>`
-    : `<div class="bc-row"><div class="bc-row-title">① 資源使用R分群：—</div></div>`;
+  const rCard = rCluster
+    ? _bcCard('①', '資源使用R分群',
+        `<span class="bc-card-key">${escapeHtml(rCluster)}</span><span class="bc-card-name">${escapeHtml(BC_R_LABELS[rCluster] || '')}</span>`,
+        `本分群歷史不及格率 ${_bcPct(byR[rCluster]?.fail_rate_final)}（全體 ${_bcPct(overall.fail_rate_final)}）`)
+    : _bcCard('①', '資源使用R分群', '', '', '目前資料不足以判定');
 
-  const sRow = sCluster
-    ? `<div class="bc-row">
-         <div class="bc-row-title">② 行為序列S分群：${escapeHtml(sCluster)} ${escapeHtml(BC_S_LABELS[sCluster] || '')}</div>
-         <div class="bc-row-sub">本分群歷史不及格率 ${_bcPct(byS[sCluster]?.fail_rate_final)}（全體 ${_bcPct(overall.fail_rate_final)}）</div>
-       </div>`
-    : `<div class="bc-row"><div class="bc-row-title">② 行為序列S分群：序列樣本不足，未分類</div></div>`;
+  const sCard = sCluster
+    ? _bcCard('②', '行為序列S分群',
+        `<span class="bc-card-key">${escapeHtml(sCluster)}</span><span class="bc-card-name">${escapeHtml(BC_S_LABELS[sCluster] || '')}</span>`,
+        `本分群歷史不及格率 ${_bcPct(byS[sCluster]?.fail_rate_final)}（全體 ${_bcPct(overall.fail_rate_final)}）`)
+    : _bcCard('②', '行為序列S分群', '', '', '序列樣本不足，未分類');
 
-  let trajRow;
+  let trajCard;
   if (status === 'IN_PROGRESS') {
-    trajRow = `<div class="bc-row"><div class="bc-row-title">③ 期中→期末軌跡分型：本學期進行中，需等期末成績公布後才能判定</div></div>`;
+    trajCard = _bcCard('③', '期中→期末軌跡分型', '', '', '本學期進行中，需等期末成績公布後才能判定');
   } else if (trajectory) {
     const t = overall.trajectory || {};
-    trajRow = `<div class="bc-row">
-        <div class="bc-row-title">③ 期中→期末軌跡分型：${escapeHtml(trajectory)} ${escapeHtml(BC_TRAJ_LABELS[trajectory] || '')}</div>
-        <div class="bc-row-sub">全體學生軌跡分布：SS ${_bcPct(t.SS)} ／ FS ${_bcPct(t.FS)} ／ SF ${_bcPct(t.SF)} ／ FF ${_bcPct(t.FF)}</div>
-      </div>`;
+    trajCard = _bcCard('③', '期中→期末軌跡分型',
+      `<span class="bc-card-key">${escapeHtml(trajectory)}</span><span class="bc-card-name">${escapeHtml(BC_TRAJ_LABELS[trajectory] || '')}</span>`,
+      `全體學生軌跡分布：SS ${_bcPct(t.SS)} ／ FS ${_bcPct(t.FS)} ／ SF ${_bcPct(t.SF)} ／ FF ${_bcPct(t.FF)}`);
+  } else if (scFieldMissing) {
+    trajCard = _bcCard('③', '期中→期末軌跡分型', '', '', '⚠ 資料版本落後：cross_analysis.json 缺少「學生分型」欄位，需重新部署最新版資料（非本筆記錄異常）', true);
   } else {
-    trajRow = `<div class="bc-row"><div class="bc-row-title">③ 期中→期末軌跡分型：—</div></div>`;
+    // 個案：欄位存在，但查無此筆記錄對應鍵（如成績缺考等真實邊界情況）
+    trajCard = _bcCard('③', '期中→期末軌跡分型', '', '', '目前資料不足以判定（僅此筆記錄缺對應分類資料，非系統性問題）');
   }
 
-  let approachRow;
+  let approachCard;
   if (learningApproach) {
     const a = overall.approach || {};
-    approachRow = `<div class="bc-row">
-        <div class="bc-row-title">④ 學習方法歸類：${escapeHtml(learningApproach)} ${escapeHtml(BC_APPROACH_LABELS[learningApproach] || '')}</div>
-        <div class="bc-row-sub">全體學生三型分布：DEEP ${_bcPct(a.DEEP)} ／ SURFACE ${_bcPct(a.SURFACE)} ／ MODERATE ${_bcPct(a.MODERATE)}</div>
-      </div>`;
+    approachCard = _bcCard('④', '學習方法歸類',
+      `<span class="bc-card-key">${escapeHtml(learningApproach)}</span><span class="bc-card-name">${escapeHtml(BC_APPROACH_LABELS[learningApproach] || '')}</span>`,
+      `全體學生三型分布：DEEP ${_bcPct(a.DEEP)} ／ SURFACE ${_bcPct(a.SURFACE)} ／ MODERATE ${_bcPct(a.MODERATE)}`);
+  } else if (scFieldMissing) {
+    approachCard = _bcCard('④', '學習方法歸類', '', '', '⚠ 資料版本落後：cross_analysis.json 缺少「學生分型」欄位，需重新部署最新版資料（非本筆記錄異常）', true);
   } else {
-    approachRow = `<div class="bc-row"><div class="bc-row-title">④ 學習方法歸類：—</div></div>`;
+    approachCard = _bcCard('④', '學習方法歸類', '', '', '目前資料不足以判定（僅此筆記錄缺對應分類資料，非系統性問題）');
   }
 
   const note = status === 'IN_PROGRESS'
     ? `<div class="bc-note">本學期進行中，僅供參考；軌跡分型需等期末成績公布後才能判定</div>`
     : '';
 
-  return `<div class="bc-panel-body">${note}${rRow}${sRow}${trajRow}${approachRow}</div>`;
+  return `<div class="bc-panel-body">${note}<div class="bc-card-grid">${rCard}${sCard}${trajCard}${approachCard}</div></div>`;
+}
+
+/**
+ * 卡片橫排樣板（31號規格書 Panel C 改版）：比照
+ * tab-behavior-radar.js::renderClusterSummary() 的 .behavior-cluster-card
+ * 視覺語彙（見該檔 CSP-2 FIX 段落），改為 index.html 靜態 CSS class
+ * （非動態注入），因本卡片內容為固定4欄、非可變長度清單，不需要
+ * 該檔案那套逐卡計算寬度的 JS。
+ * @param {string} idx 圈碼數字，如 '①'
+ * @param {string} label 分類標籤，如 '資源使用R分群'
+ * @param {string} mainHtml 主要數值 HTML（已含 escapeHtml 處理過的動態值）
+ * @param {string} subHtml 次要說明文字（已含 escapeHtml 處理過的動態值），可為空字串
+ * @param {string} [emptyMsg] 無資料時顯示的說明文字；傳入時忽略 mainHtml/subHtml
+ * @param {boolean} [isWarn] true 時套用 .bc-card-warn 樣式（結構性/系統性問題，
+ *   如整份 cross_analysis.json 缺少某欄位——需與個案性的「僅此筆無資料」視覺區隔，
+ *   讓使用者一眼能判斷是否為需回報/需重新部署資料的系統性狀況）
+ */
+function _bcCard(idx, label, mainHtml, subHtml, emptyMsg, isWarn) {
+  if (emptyMsg) {
+    return `<div class="bc-card bc-card-empty${isWarn ? ' bc-card-warn' : ''}">
+        <div class="bc-card-head"><span class="bc-card-idx">${idx}</span><span class="bc-card-cat">${label}</span></div>
+        <div class="bc-card-val bc-card-msg">${emptyMsg}</div>
+      </div>`;
+  }
+  return `<div class="bc-card">
+      <div class="bc-card-head"><span class="bc-card-idx">${idx}</span><span class="bc-card-cat">${label}</span></div>
+      <div class="bc-card-val">${mainHtml}</div>
+      ${subHtml ? `<div class="bc-card-sub">${subHtml}</div>` : ''}
+    </div>`;
 }
 
 /**
