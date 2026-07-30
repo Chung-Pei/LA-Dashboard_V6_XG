@@ -48,7 +48,7 @@ const BehaviorWarningTab = (() => {
     .ladash-outcome-fail{color:#e74c3c;font-weight:600}
     .ladash-outcome-pass{color:#2ecc71}
     .ladash-export-btn{padding:6px 14px;border-radius:6px;border:1px solid var(--accent,#3498db);background:transparent;color:var(--accent,#3498db);cursor:pointer;font-size:.8rem}
-    .ladash-val-td{padding:3px 8px}
+    .ladash-val-td{padding:3px 8px;white-space:nowrap}
     .ladash-w-errmsg{color:#c0392b;font-size:.85rem;padding:12px}
     .ladash-w-empty{text-align:center;padding:32px 16px;color:var(--text-dim,#888);font-size:.85rem}
     .ladash-w-empty-icon{font-size:1.6rem;margin-bottom:8px;display:block}
@@ -56,7 +56,7 @@ const BehaviorWarningTab = (() => {
     .ladash-w-val-hdr{font-size:.75rem;font-weight:600;color:#2ecc71;margin-bottom:6px}
     .ladash-w-val-tbl{width:100%;font-size:.72rem;border-collapse:collapse}
     .ladash-w-th-dim{color:var(--text-dim,#888)}
-    .ladash-w-th{padding:3px 8px;text-align:left;font-weight:600}
+    .ladash-w-th{padding:3px 8px;text-align:left;font-weight:600;white-space:nowrap}
     .ladash-w-val-note{margin-top:6px;font-size:.72rem;color:var(--text-dim,#888)}
     .ladash-w-summary-txt{font-size:.82rem;line-height:1.7}
     .ladash-w-summary-box{margin-bottom:10px;padding:8px 10px;border-radius:6px;background:rgba(100,160,255,.07);border:1px solid rgba(100,160,255,.15)}
@@ -408,17 +408,19 @@ const BehaviorWarningTab = (() => {
 
           <div class="ladash-w-val-section">
             <div class="ladash-w-val-section-title">分組校準度</div>
-            <table class="ladash-w-val-tbl">
-              <thead><tr class="ladash-w-th-dim">
-                <th class="ladash-w-th">風險組</th>
-                <th class="ladash-w-th">人數</th>
-                <th class="ladash-w-th">預測不及格率</th>
-                <th class="ladash-w-th">實際不及格率</th>
-                <th class="ladash-w-th">校準誤差</th>
-                <th class="ladash-w-th">命中率</th>
-              </tr></thead>
-              <tbody>${calRows}</tbody>
-            </table>
+            <div class="ladash-w-scroll">
+              <table class="ladash-w-val-tbl">
+                <thead><tr class="ladash-w-th-dim">
+                  <th class="ladash-w-th">風險組</th>
+                  <th class="ladash-w-th">人數</th>
+                  <th class="ladash-w-th">預測不及格率</th>
+                  <th class="ladash-w-th">實際不及格率</th>
+                  <th class="ladash-w-th">校準誤差</th>
+                  <th class="ladash-w-th">命中率</th>
+                </tr></thead>
+                <tbody>${calRows}</tbody>
+              </table>
+            </div>
             <div class="ladash-w-val-note">命中率 = 各組實際不及格人數 / 該組總人數；校準誤差 &gt;5pp 為橘紅色</div>
           </div>
 

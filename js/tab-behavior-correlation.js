@@ -729,6 +729,12 @@ const BehaviorCorrelationTab = (() => {
     if (!Array.isArray(raw)) { _lastFilterKey = key; _lastFiltered = raw; return raw; }
 
     const thresholds = _corrData?.outlier_thresholds || {};
+    // PERF-FIX (2026-07-28)：_effectivePassThreshold(raw) 只取決於 raw（整個未篩選
+    // 陣列），對每一列而言都是同一個值，但原本寫在 .filter() 逐列回呼內，每列都
+    // 重新呼叫一次——對 raw 做一次 O(n) 運算（map+filter+視情況排序）卻執行 n 次，
+    // 形同 O(n²)。提到迴圈外算一次即可，_filterPass==="all" 時完全不受影響
+    // （沿用原本的短路邏輯，不呼叫）。行為不變，純屬迴圈不變量外提。
+    const _passThreshold = _filterPass !== "all" ? _effectivePassThreshold(raw) : null;
     _lastFiltered = raw.filter(row => {
       if (_filterSemester !== "all") {
         const rowSem = _rowSemesterKey(row);
@@ -741,7 +747,7 @@ const BehaviorCorrelationTab = (() => {
       if (_filterPass !== "all") {
         const score = _rowScore(row);
         if (score === null) return false;
-        const passing = score >= _effectivePassThreshold(raw);
+        const passing = score >= _passThreshold;
         if (_filterPass === "pass" && !passing) return false;
         if (_filterPass === "fail" && passing) return false;
       }

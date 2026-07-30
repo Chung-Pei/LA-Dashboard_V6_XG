@@ -609,7 +609,7 @@ const AtRiskReportManager = (() => {
     flagHeading.textContent = '🚩 紅旗警示';
     el.appendChild(flagHeading);
 
-    flags.forEach(f => {
+    flags.forEach((f, idx) => {
       const card = document.createElement('div');
       card.className = 'r-flag-card';
       card.style.setProperty('--flag-color', f.color);
@@ -625,11 +625,43 @@ const AtRiskReportManager = (() => {
       title.className   = 'r-flag-title';
       title.textContent = f.title;
 
+      // UNIFY-R：內容部分預設收合，統一折疊樣式（見上方 CSS 區塊說明）
+      const bodyId = `rFlagBody-${idx}`;
       const body = document.createElement('div');
       body.className   = 'r-flag-body' + (f.multiline ? ' r-flag-body--multiline' : '');
       body.textContent = f.body;
+      body.id = bodyId;
+      body.style.setProperty('display', 'none');
+
+      const toggleBtn = document.createElement('button');
+      toggleBtn.type = 'button';
+      toggleBtn.className = 'r-flag-toggle';
+      toggleBtn.setAttribute('aria-expanded', 'false');
+      toggleBtn.setAttribute('aria-controls', bodyId);
+
+      const toggleIcon = document.createElement('span');
+      toggleIcon.className   = 'r-flag-toggle-icon';
+      toggleIcon.textContent = '▶';
+
+      const toggleLabel = document.createElement('span');
+      toggleLabel.className   = 'r-flag-toggle-label';
+      toggleLabel.textContent = '詳細說明';
+
+      const toggleHint = document.createElement('span');
+      toggleHint.className   = 'r-flag-toggle-hint';
+      toggleHint.textContent = '點擊展開';
+
+      toggleBtn.append(toggleIcon, toggleLabel, toggleHint);
+      toggleBtn.addEventListener('click', () => {
+        const isOpen = body.style.display !== 'none';
+        body.style.setProperty('display', isOpen ? 'none' : 'block');
+        toggleIcon.textContent = isOpen ? '▶' : '▼';
+        toggleHint.textContent = isOpen ? '點擊展開' : '點擊收合';
+        toggleBtn.setAttribute('aria-expanded', String(!isOpen));
+      });
 
       content.appendChild(title);
+      content.appendChild(toggleBtn);
       content.appendChild(body);
       card.appendChild(icon);
       card.appendChild(content);
@@ -880,9 +912,42 @@ const AtRiskReportManager = (() => {
         font-size: 12px;
         color: var(--text-mid, #555);
         line-height: 1.75;
+        margin-top: 8px;
       }
       .r-flag-body--multiline {
         white-space: pre-line;
+      }
+      /* UNIFY-R (2026-07-28)：紅旗警示「內容」比照全站其他資訊卡片的統一
+         折疊樣式（▶/▼ 圖示＋提示文字），預設關閉；標題（巨觀摘要）維持
+         常駐顯示，讓使用者先掌握各紅旗全貌，有疑問再展開細節。 */
+      .r-flag-toggle {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        width: 100%;
+        margin-top: 4px;
+        padding-top: 8px;
+        border: none;
+        border-top: 1px dashed var(--border, #e0e0e0);
+        background: none;
+        cursor: pointer;
+        font-size: 11px;
+        text-align: left;
+        font-family: inherit;
+      }
+      .r-flag-toggle-icon {
+        font-size: 9px;
+        color: var(--flag-color);
+        flex-shrink: 0;
+      }
+      .r-flag-toggle-label {
+        font-weight: 600;
+        color: var(--text-mid, #555);
+      }
+      .r-flag-toggle-hint {
+        margin-left: auto;
+        opacity: .6;
+        color: var(--text-dim, #888);
       }
 
       /* ── §5.6 處方性建議卡片 ───────────────────────────── */

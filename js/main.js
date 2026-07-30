@@ -564,14 +564,39 @@ function cleanSheetName(s) {
 }
 
 function classCodeText(s) {
+  // PERF FIX (/systematic-debugging 穿透式審查七)：原本這裡是 cleanSheetName(s).toUpperCase()...，
+  // 但本函式僅有的2個呼叫端 classInfo()／getBaseProgram() 都已先自行 cleanSheetName(sheetName)
+  // 取得 raw 才傳進來，等於對同一字串重複執行一次 Unicode NFKC normalize + 3道regex replace，
+  // 對每筆班級名稱都平白多做一次相同的字串清理。cleanSheetName 具冪等性，故移除此處重複呼叫
+  // 不影響結果，只省去浪費的運算。若未來新增呼叫端，請先自行 cleanSheetName() 再傳入。
   const numMap = { '零':'0','〇':'0','一':'1','ㄧ':'1','二':'2','兩':'2','三':'3','四':'4','五':'5','六':'6','七':'7','八':'8','九':'9' };
-  return cleanSheetName(s)
+  return s
     .toUpperCase()
     .replace(/[零〇一ㄧ二兩三四五六七八九]/g, ch => numMap[ch] ?? ch)
     .replace(/已/g, '己');
 }
 
+// PERF FIX (/systematic-debugging 穿透式審查七)：classInfo() 為純函式——輸出完全
+// 由 (sheetName, semester) 決定，不讀寫任何可變外部狀態；全部9個呼叫端
+// （L660/703/1017/1175/1875/2678/3573等）皆只讀取回傳物件的 .canonical/.program/.order
+// 屬性、從未就地修改，故可安全以複合鍵快取並共用同一個回傳物件參照。
+// 全體資料集實際 distinct(sheet_name, semester) 組合數遠小於逐筆記錄數
+// （FilterEngine buildIndex 記錄約243個班級-學期-類型組合），但 getAFilteredRecords()／
+// compareSheetNames() 等函式會對「每一筆記錄」或「排序比較的每一次呼叫」重新執行一次，
+// 而同一組合在資料集中通常被數十位學生的記錄重複引用，故加此快取可省去絕大多數重複的
+// Unicode正規化＋多道regex比對運算。快取為模組層級、無上限（key數量天生就很小，
+// 不會有記憶體疑慮），比照本檔既有 _flatStudentsCache／_behaviorIndexCache 同類作法。
+const _classInfoCache = new Map();
 function classInfo(sheetName, semester = '') {
+  const cacheKey = `${sheetName}||${semester}`;
+  const cached = _classInfoCache.get(cacheKey);
+  if (cached) return cached;
+  const result = _classInfoCompute(sheetName, semester);
+  _classInfoCache.set(cacheKey, result);
+  return result;
+}
+
+function _classInfoCompute(sheetName, semester = '') {
   const raw = cleanSheetName(sheetName) || '';
   const code = classCodeText(raw);
   if (!raw) return { canonical: raw, program: '2yr_gen', order: 9999 };
@@ -1747,7 +1772,9 @@ function selectRetakeStudent(sid) {
   const box = document.getElementById('searchResultsRetake');
   if (box) box.classList.remove('open');
   selectStudent(sid);
-  renderCView();
+  // PERF FIX（同上 searchStudent() 結果點擊處的修正，理由相同）：
+  // 選取哪位重修生不影響 cPanelRetake 聚合統計內容，只需同步可見性。
+  _syncCProfileVisibility();
 }
 
 function _showCEmptyHint(reason) {
@@ -2325,7 +2352,15 @@ function _searchStudentRun(q) {
       </div>
     `).join('');
     box.querySelectorAll('.search-item[data-sid]').forEach(el => {
-      el.addEventListener('click', () => { selectStudent(el.dataset.sid); renderCView(); });
+      // PERF FIX (/systematic-debugging 穿透式審查六)：選取學生只會讓
+      // profileWrap 由空轉為非空，進入「個案模式」；_syncCProfileVisibility()
+      // 隨即會把 cPanelGeneral/cStats 設為 display:none（見該函式定義處
+      // 註解）。選取哪位學生不影響全體篩選聚合結果（getCFilteredRecords()
+      // 僅讀取篩選下拉選單狀態），故原本的 renderCView() 會先做一次完整的
+      // O(n) 全量重算＋兩張圖表重繪＋統計卡重建，結果卻在同一輪立刻被隱藏，
+      // 純屬白工。改為只呼叫實際需要的 _syncCProfileVisibility()，比照本檔
+      // resetCFilters() 既有同類用法（L1632）。
+      el.addEventListener('click', () => { selectStudent(el.dataset.sid); _syncCProfileVisibility(); });
     });
   }
   box.classList.add('open');
@@ -2391,6 +2426,15 @@ function renderProfile(sid) {
         </div>
         ${r.exceptions.length ? `<div class="tl-tags">${r.exceptions.map(e =>
           `<span class="tag tag-${escapeHtml(e.color)}">${escapeHtml(e.tag)}</span>`).join('')}</div>` : ''}
+        ${r.type === 'theory' ? `
+          <button type="button" class="tl-behavior-btn"
+                  data-action="toggleBehaviorClassPanel"
+                  data-anon="${escapeHtml(data.anon_id)}"
+                  data-sem="${escapeHtml(r.semester)}">
+            🔍 學習行為分型
+          </button>
+          <div class="tl-behavior-panel is-hidden"></div>
+        ` : ''}
       </div>
     `;
   });
@@ -2465,6 +2509,182 @@ function renderProfile(sid) {
       }
     }
   });
+}
+
+// ══════════════════════════════════════════════════════════
+// PANEL C 個案卡：學習行為分型查詢（31號規格書 v1.1，方案A：時間軸inline展開）
+// ══════════════════════════════════════════════════════════
+// R1-R5 / S1-S5 中文標籤：沿用ETL既有分群定義；比照 tab-behavior-*.js 既有做法
+// （各檔各自維護一份同名對照表，無跨模組 import 慣例），本檔比照辦理。
+const BC_R_LABELS = { R1: '影音輔導型', R2: '彈性聽覺型', R3: '平均使用型', R4: '題庫刷題型', R5: '被動低參與型' };
+const BC_S_LABELS = { S1: '穩定高效', S2: '規律中效', S3: '波動中效', S4: '低頻低效', S5: '高風險' };
+// 軌跡分型／學習方法三型中文標籤：統一比照「行為預測分析」分頁既有已上線的
+// 「分析框架說明」卡片用詞（js/tab-behavior-cross.js 的 TRAJ_NAMES／APPROACH_NAMES，
+// 同一套 SS/FS/SF/FF、DEEP/SURFACE/MODERATE 分型，來源同一份 cross_analysis.json）。
+// 31號規格書 §5.4 原建議另一套草案用詞，為避免同一分型在系統內出現兩種不同稱呼，
+// 改採此既有、已上線之版本，不再另外命名。
+const BC_TRAJ_LABELS = { SS: '穩定及格', FS: '自救成功', SF: '成績滑落', FF: '持續不及格' };
+const BC_APPROACH_LABELS = { DEEP: '深層學習', SURFACE: '表層學習', MODERATE: '中間型' };
+
+// 百分比格式：比照 tab-behavior-cross.js::_pct() 既有一位小數慣例（無跨模組 import，本檔自成一份）
+function _bcPct(x) {
+  const n = Number(x);
+  return (x == null || isNaN(n)) ? '—' : (n * 100).toFixed(1) + '%';
+}
+
+// anon_id+semester 複合鍵索引（31號規格書 §4.2）。模組層級變數快取一次，
+// 比照本檔既有 _flatStudentsCache 作法，避免每次開個案卡都重建 2900+ 筆的 Map。
+// 陷阱提醒（§2.5）：不可用 BehaviorLoader.loadBehaviorData() 的 byMaskedId
+// （同一 masked_id 若有多學期記錄，Map 只留最後一筆），改對原始陣列自建複合鍵。
+let _behaviorIndexCache = null;
+function buildBehaviorIndex(behaviorData) {
+  if (_behaviorIndexCache) return _behaviorIndexCache;
+  const idx = new Map();
+  (behaviorData.students || []).forEach(s => idx.set(`${s.anon_id}||${s.semester}`, s));
+  _behaviorIndexCache = idx;
+  return idx;
+}
+
+/**
+ * 31號規格書 §4 狀態判定邏輯 + §5.4 內容樣板。逐筆（per class record）判定。
+ * NOT_APPLICABLE（非theory）由呼叫端（timeline模板）已用按鈕可見性排除，不在此處理。
+ * NO_DATA／INSUFFICIENT_DATA 採「顯示提示訊息」而非隱藏按鈕（§6 允許兩種UI處理擇一，
+ * 前者不需在 renderProfile() 同步階段預先載入 behavior.json 才能決定按鈕是否顯示，
+ * 沿用本功能整體的惰性載入設計，實作更單純）。
+ * @returns {Promise<string>} innerHTML，所有動態值皆經 escapeHtml()
+ */
+async function buildBehaviorClassificationHtml(anonId, sem) {
+  const [behaviorData, corrData, crossData] = await Promise.all([
+    BehaviorLoader.load.behavior(),
+    BehaviorLoader.load.correlation(),
+    BehaviorLoader.load.crossAnalysis(),
+  ]);
+
+  // §4-2.1：學期白名單檢查
+  const whitelist = behaviorData.meta?.semesters || [];
+  if (!whitelist.includes(sem)) {
+    return `<div class="bc-nodata">無相關學習資料評估</div>`;
+  }
+
+  // §4-2.2：查 behavior.json 對應列（複合鍵索引，避開 byMaskedId 覆蓋陷阱）
+  const key = `${anonId}||${sem}`;
+  const behRec = buildBehaviorIndex(behaviorData).get(key);
+  if (!behRec) {
+    return `<div class="bc-nodata">無相關學習資料評估</div>`;
+  }
+
+  // §4-2.3：判斷該學期是否仍在進行中
+  const incompleteList = crossData.meta?.incomplete_semesters_excluded || [];
+  const lsaTypeMap = corrData.lsa_transition?.lsa_type_map || {};
+  let rCluster, sCluster, learningApproach, trajectory, status;
+
+  if (incompleteList.includes(sem)) {
+    const targetSem = await BehaviorLoader.getWarningTargetSemester();
+    let matched = null;
+    if (targetSem === sem) {
+      const warningResult = await BehaviorLoader.loadWarningForCurrentTarget();
+      if (warningResult && warningResult.semester === sem) {
+        const list = warningResult.data?.students || [];
+        // masked_id 於 behavior.json 與 warning_*.json 為同一組值（§2.5），
+        // 用剛查到的 behRec.masked_id 比對，等效於規格書「DATA.students[sid].name_masked」。
+        matched = list.find(s => s.masked_id === behRec.masked_id) || null;
+      }
+    }
+    if (matched) {
+      status = 'IN_PROGRESS';
+      rCluster = matched.r_cluster ?? null;
+      sCluster = matched.s_cluster ?? null;
+      learningApproach = matched.learning_approach ?? null;
+      trajectory = null; // 尚無期末成績，本就無法判定
+    } else {
+      status = 'INSUFFICIENT_DATA';
+    }
+  } else {
+    status = 'COMPLETE';
+    rCluster = behRec.cluster ?? null;
+    sCluster = lsaTypeMap[key] ?? null;
+    const cls = crossData.student_classification?.[key] || {};
+    trajectory = cls.trajectory ?? null;
+    learningApproach = cls.learning_approach ?? null;
+  }
+
+  if (status === 'INSUFFICIENT_DATA') {
+    return `<div class="bc-nodata">目前資料尚不足以判斷學習行為分型</div>`;
+  }
+
+  const byR = crossData.by_r_cluster || {};
+  const byS = crossData.by_s_cluster || {};
+  const overall = crossData.overall || {};
+
+  const rRow = rCluster
+    ? `<div class="bc-row">
+         <div class="bc-row-title">① 資源使用R分群：${escapeHtml(rCluster)} ${escapeHtml(BC_R_LABELS[rCluster] || '')}</div>
+         <div class="bc-row-sub">本分群歷史不及格率 ${_bcPct(byR[rCluster]?.fail_rate_final)}（全體 ${_bcPct(overall.fail_rate_final)}）</div>
+       </div>`
+    : `<div class="bc-row"><div class="bc-row-title">① 資源使用R分群：—</div></div>`;
+
+  const sRow = sCluster
+    ? `<div class="bc-row">
+         <div class="bc-row-title">② 行為序列S分群：${escapeHtml(sCluster)} ${escapeHtml(BC_S_LABELS[sCluster] || '')}</div>
+         <div class="bc-row-sub">本分群歷史不及格率 ${_bcPct(byS[sCluster]?.fail_rate_final)}（全體 ${_bcPct(overall.fail_rate_final)}）</div>
+       </div>`
+    : `<div class="bc-row"><div class="bc-row-title">② 行為序列S分群：序列樣本不足，未分類</div></div>`;
+
+  let trajRow;
+  if (status === 'IN_PROGRESS') {
+    trajRow = `<div class="bc-row"><div class="bc-row-title">③ 期中→期末軌跡分型：本學期進行中，需等期末成績公布後才能判定</div></div>`;
+  } else if (trajectory) {
+    const t = overall.trajectory || {};
+    trajRow = `<div class="bc-row">
+        <div class="bc-row-title">③ 期中→期末軌跡分型：${escapeHtml(trajectory)} ${escapeHtml(BC_TRAJ_LABELS[trajectory] || '')}</div>
+        <div class="bc-row-sub">全體學生軌跡分布：SS ${_bcPct(t.SS)} ／ FS ${_bcPct(t.FS)} ／ SF ${_bcPct(t.SF)} ／ FF ${_bcPct(t.FF)}</div>
+      </div>`;
+  } else {
+    trajRow = `<div class="bc-row"><div class="bc-row-title">③ 期中→期末軌跡分型：—</div></div>`;
+  }
+
+  let approachRow;
+  if (learningApproach) {
+    const a = overall.approach || {};
+    approachRow = `<div class="bc-row">
+        <div class="bc-row-title">④ 學習方法歸類：${escapeHtml(learningApproach)} ${escapeHtml(BC_APPROACH_LABELS[learningApproach] || '')}</div>
+        <div class="bc-row-sub">全體學生三型分布：DEEP ${_bcPct(a.DEEP)} ／ SURFACE ${_bcPct(a.SURFACE)} ／ MODERATE ${_bcPct(a.MODERATE)}</div>
+      </div>`;
+  } else {
+    approachRow = `<div class="bc-row"><div class="bc-row-title">④ 學習方法歸類：—</div></div>`;
+  }
+
+  const note = status === 'IN_PROGRESS'
+    ? `<div class="bc-note">本學期進行中，僅供參考；軌跡分型需等期末成績公布後才能判定</div>`
+    : '';
+
+  return `<div class="bc-panel-body">${note}${rRow}${sRow}${trajRow}${approachRow}</div>`;
+}
+
+/**
+ * 方案A（31號規格書 §5.1）：時間軸逐筆記錄按鈕，惰性展開/收合分型面板。
+ * data-action 委派呼叫，profileWrap 每次重繪皆為新DOM節點，天然免重綁定（§5.0第1點）。
+ */
+async function toggleBehaviorClassPanel(anonId, sem, btnEl) {
+  const panel = btnEl.nextElementSibling; // 模板中緊接在按鈕後的 .tl-behavior-panel
+  if (!panel) return;
+  if (panel.classList.contains('is-hidden')) {
+    if (panel.dataset.rendered !== '1') {
+      panel.innerHTML = '載入中…';
+      panel.classList.remove('is-hidden');
+      try {
+        panel.innerHTML = await buildBehaviorClassificationHtml(anonId, sem);
+        panel.dataset.rendered = '1'; // 惰性：同一面板只渲染一次，之後純toggle
+      } catch (e) {
+        console.error('[toggleBehaviorClassPanel]', e);
+        panel.innerHTML = '<div class="bc-nodata">載入失敗，請重新整理頁面後再試</div>';
+      }
+    } else {
+      panel.classList.remove('is-hidden');
+    }
+  } else {
+    panel.classList.add('is-hidden');
+  }
 }
 
 // ══════════════════════════════════════════════════════════
@@ -4580,11 +4800,34 @@ const FilterMemory = (() => {
 // 緊接的 renderD()（loadData 內）或使用者之後切到 Panel A 時 switchTab('A') 保證的
 // renderA() 蓋掉，100% 是丟棄不用的運算。此處只還原狀態變數與下拉選單/按鈕視覺
 // 樣式，最終畫面內容不變。
+// SEC-FIX-2 (/security-review)：FilterMemory.load() 讀回 localStorage 的值，
+// 須先通過 allowlist 才能傳入 setter 函式。localStorage 屬用戶可控空間，
+// 攻擊者（或惡意瀏覽器擴充功能）可在不觸發 CSP 的前提下寫入任意值；
+// 雖然現有 setter 不直接插入 innerHTML，但非預期字串仍可污染模組狀態變數
+// （bMode/dView/cCurrentExam 等），造成篩選邏輯靜默失效或顯示異常。
+const FILTER_MEMORY_ALLOWLIST = {
+  setBMode:    new Set(['sheet', 'student']),
+  setBType:    new Set(['theory', 'practicum']),
+  setCType:    new Set(['all', 'theory', 'practicum']),
+  setCPass:    new Set(['all', 'pass', 'fail']),
+  setCExam:    new Set(['semester_score', 'midterm', 'final']),
+  setDSemMode: new Set(['range', 'multi']),
+  setDType:    new Set(['all', 'theory', 'practicum']),
+  setDView:    new Set(['merge', 'class']),
+  setDMetric:  new Set(['semester_score', 'midterm', 'final']),
+};
+
 function restoreFilterMemory() {
   let aRestored = false, dRestored = false;
   const restore = (id, applyFn) => {
     const v = FilterMemory.load(id);
-    if (v !== null) { applyFn(v); return true; }
+    // SEC-FIX-2：allowlist 過濾——僅允許已知合法值通過，其餘靜默忽略。
+    // el.value 賦值（aFilterSem/aFilterProgram/cFilterSem 等下拉選單）由
+    // <select> 元素本身自動丟棄無效 option 值，不在此處額外過濾。
+    if (v !== null) {
+      if (FILTER_MEMORY_ALLOWLIST[id] && !FILTER_MEMORY_ALLOWLIST[id].has(v)) return false;
+      applyFn(v); return true;
+    }
     return false;
   };
 
@@ -4739,6 +4982,8 @@ function initDataActionDelegation() {
       printClearAll:     () => {},
       // Panel C retake search result selection
       selectRetakeStudent: () => selectRetakeStudent(el.dataset.sid),
+      // Panel C 個案卡：學習行為分型查詢（31號規格書 §5.1，方案A）
+      toggleBehaviorClassPanel: () => toggleBehaviorClassPanel(el.dataset.anon, el.dataset.sem, el),
       // Panel / popover close
       hidePanel: () => {
         const panel = document.getElementById(el.dataset.target);

@@ -411,6 +411,11 @@ const PrintPanel = (() => {
 
   function sanitizeClone(root) {
     root.querySelectorAll("script, button, .chart-popover, .chart-expand-btn, .chart-info-btn").forEach((node) => node.remove());
+    // UNIFY-R PRINT-FIX (2026-07-28)：紅旗警示卡的詳細說明預設摺疊（display:none），
+    // cloneNode 會原樣保留此行內樣式，若不處理，使用者未展開就直接列印會導致
+    // 內容空白。列印本來就無法互動摺疊，故此處強制展開；折疊按鈕已被上一行的
+    // button 選擇器移除，不會殘留在列印輸出中。
+    root.querySelectorAll(".r-flag-body").forEach((node) => node.style.removeProperty("display"));
     root.querySelectorAll("[id]").forEach((node) => node.removeAttribute("id"));
     root.querySelectorAll("[data-action], [data-tip], [onclick]").forEach((node) => {
       node.removeAttribute("data-action");
