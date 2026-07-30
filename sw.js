@@ -30,7 +30,7 @@ const DATA_CACHE_PREFIX = 'la-dash-v11-docs-cachefix-data';
 // Keep this value identical to index.html's ?v= values and
 // js/behavior-loader.js DATA_VERSION.  update-dashboard-after-etl.ps1
 // updates all three as one deployment transaction.
-const BUILD_VERSION = '202607271813';
+const BUILD_VERSION = '202607300905';
 
 const CACHE_VERSION = `${CACHE_PREFIX}-${BUILD_VERSION}`;
 const DATA_CACHE = `${DATA_CACHE_PREFIX}-${BUILD_VERSION}`;
@@ -48,21 +48,21 @@ const APP_SHELL = [
   './js/vendor/chart.umd.min.js',
   './js/vendor/chartjs-plugin-annotation.min.js',
   './js/frame-guard.js',
-  './js/filter-engine.js?v=202607271813',
-  './js/main.js?v=202607271813',
+  './js/filter-engine.js?v=202607300905',
+  './js/main.js?v=202607300905',
   './js/vendor/d3.min.js',
-  './js/chart-registry.js?v=202607271813',
-  './js/help-modal.js?v=202607271813',
-  './js/behavior-loader.js?v=202607271813',
-  './js/tab-behavior-radar.js?v=202607271813',
-  './js/tab-behavior-correlation.js?v=202607271813',
-  './js/tab-behavior-time.js?v=202607271813',
-  './js/tab-behavior-lsa.js?v=202607271813',
-  './js/tab-behavior-cross.js?v=202607271813',
-  './js/tab-behavior-warning.js?v=202607271813',
-  './js/behavior-init.js?v=202607271813',
-  './js/at-risk-report.js?v=202607271813',
-  './js/print-panel.js?v=202607271813',
+  './js/chart-registry.js?v=202607300905',
+  './js/help-modal.js?v=202607300905',
+  './js/behavior-loader.js?v=202607300905',
+  './js/tab-behavior-radar.js?v=202607300905',
+  './js/tab-behavior-correlation.js?v=202607300905',
+  './js/tab-behavior-time.js?v=202607300905',
+  './js/tab-behavior-lsa.js?v=202607300905',
+  './js/tab-behavior-cross.js?v=202607300905',
+  './js/tab-behavior-warning.js?v=202607300905',
+  './js/behavior-init.js?v=202607300905',
+  './js/at-risk-report.js?v=202607300905',
+  './js/print-panel.js?v=202607300905',
 ];
 
 self.addEventListener('install', (event) => {
@@ -99,9 +99,13 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(request.url);
 
+  // SEC-FIX-1 (/security-review)：cross-origin 請求直接放行，讓瀏覽器原生處理。
+  // 原本的 cacheFirst(request) 路由存在 deadlock：SW 沒有 CORS 憑證無法快取
+  // cross-origin 回應；且 CSP connect-src 'self' 會封鎖 SW 內部的 fetch(request)
+  // 呼叫，導致 cache miss → fetch 被 CSP 封鎖 → 永遠回傳 503。
+  // 本應用程式實際上無任何 cross-origin fetch，故此修正不影響任何現有功能。
   if (url.origin !== self.location.origin) {
-    event.respondWith(cacheFirst(request));
-    return;
+    return; // 不呼叫 event.respondWith()，由瀏覽器原生路由處理
   }
 
   if (request.mode === 'navigate' || url.pathname.endsWith('.html')) {

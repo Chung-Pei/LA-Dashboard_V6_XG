@@ -578,6 +578,40 @@ body.chart-expanded-open { overflow: hidden; }
 .tl-delta.neg { background: rgba(240,112,112,0.12); color: var(--red); }
 .tl-tags { display: flex; flex-wrap: wrap; gap: 4px; }
 
+/* ── 學習行為分型查詢（31號規格書 v1.1 §5.1，方案A） ── */
+.tl-behavior-btn {
+  margin-top: 8px;
+  font-size: 10px;
+  padding: 3px 9px;
+  border-radius: 5px;
+  border: 1px solid var(--border2);
+  background: var(--surface2);
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.tl-behavior-btn:hover { color: var(--accent); border-color: var(--accent); }
+.tl-behavior-panel {
+  margin-top: 8px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  font-size: 11px;
+}
+.bc-row { margin-bottom: 8px; }
+.bc-row:last-child { margin-bottom: 0; }
+.bc-row-title { color: var(--text); font-weight: 600; }
+.bc-row-sub { margin-top: 2px; color: var(--text-dim); font-size: 10px; }
+.bc-note {
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed var(--border);
+  color: var(--accent3);
+  font-size: 10px;
+}
+.bc-nodata { color: var(--text-dim); font-size: 11px; }
+
 /* ── SEARCH ── */
 .search-wrap { position: relative; flex: 1 1 160px; min-width: 160px; }
 /* 全體學生篩選器：搜尋欄限寬，避免撐滿整列 */
@@ -738,11 +772,15 @@ body.chart-expanded-open { overflow: hidden; }
     order: 6;
     flex: 0 0 auto;
   }
+  /* MOBILE-HDR-FIX (2026-07-28)：窄螢幕（含 PWA 獨立模式）標頭可用內容高度
+     固定為 --header-h（安全區僅轉為 padding-top，不增加可用高度）；放入
+     logo/標題/主題鈕＋成績／行為／科目三個徽章後已無空間再容納此按鈕列，
+     多出的內容會被 flex-wrap 推出標頭底部、與下方分頁列重疊（壓線）。
+     依需求標頭高度不可再放大，故隱藏此按鈕——內容僅為次要中繼資訊
+     （學期數／資料更新日），桌面版（非此 media query 範圍）不受影響、
+     仍可正常開啟。實測：隱藏後最後一列徽章距標頭底緣尚有安全邊距。 */
   .meta-toggle {
-    display: inline-flex;
-    order: 7;
-    align-items: center;
-    justify-content: center;
+    display: none;
   }
   body .theme-toggle {
     width: 30px;
@@ -2670,29 +2708,29 @@ body.light .behavior-range-badge {
 </div>
 
 <!-- 核心篩選邏輯模組（Bug E fix: moved from <head> to guarantee defer order） -->
-<script defer src="js/filter-engine.js?v=202607271813"></script>
+<script defer src="js/filter-engine.js?v=202607300905"></script>
 <!-- 主應用邏輯（依賴 filter-engine.js 與 CDN Chart.js） -->
-<script defer src="js/main.js?v=202607271813"></script>
+<script defer src="js/main.js?v=202607300905"></script>
 
 <!-- ══ D3.js v7.9.0（LSA 有向圖，本地化：js/vendor/d3.min.js）══ -->
 <script src="js/vendor/d3.min.js"></script>
 
 <!-- ══ 學習行為模組（依賴 main.js 全域變數）══ -->
-<script defer src="js/chart-registry.js?v=202607271813"></script>
-<script defer src="js/help-modal.js?v=202607271813"></script>
-<script defer src="js/behavior-loader.js?v=202607271813"></script>
-<script defer src="js/tab-behavior-radar.js?v=202607271813"></script>
-<script defer src="js/tab-behavior-correlation.js?v=202607271813"></script>
-<script defer src="js/tab-behavior-time.js?v=202607271813"></script>
-<script defer src="js/tab-behavior-lsa.js?v=202607271813"></script>
-<script defer src="js/tab-behavior-cross.js?v=202607271813"></script>
-<script defer src="js/tab-behavior-warning.js?v=202607271813"></script>
+<script defer src="js/chart-registry.js?v=202607300905"></script>
+<script defer src="js/help-modal.js?v=202607300905"></script>
+<script defer src="js/behavior-loader.js?v=202607300905"></script>
+<script defer src="js/tab-behavior-radar.js?v=202607300905"></script>
+<script defer src="js/tab-behavior-correlation.js?v=202607300905"></script>
+<script defer src="js/tab-behavior-time.js?v=202607300905"></script>
+<script defer src="js/tab-behavior-lsa.js?v=202607300905"></script>
+<script defer src="js/tab-behavior-cross.js?v=202607300905"></script>
+<script defer src="js/tab-behavior-warning.js?v=202607300905"></script>
 
 <!-- ══ 行為初始化 + 高風險報告（依賴 behavior 模組）══ -->
-<script defer src="js/behavior-init.js?v=202607271813"></script>
-<script defer src="js/at-risk-report.js?v=202607271813"></script>
+<script defer src="js/behavior-init.js?v=202607300905"></script>
+<script defer src="js/at-risk-report.js?v=202607300905"></script>
 <!-- ══ 列印面板（依賴所有 behavior 模組與 ChartRegistry）══ -->
-<script defer src="js/print-panel.js?v=202607271813"></script>
+<script defer src="js/print-panel.js?v=202607300905"></script>
 
 
 </body>
