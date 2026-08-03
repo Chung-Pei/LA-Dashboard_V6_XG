@@ -19,6 +19,11 @@
  *   ChartRegistry.destroyAll();
  *
  * 載入順序：必須在所有 tab-behavior-*.js 之前載入（已於 index.html 設定 defer 順序）
+ *
+ * ARCH-NOTE（0731）：main.js 另有 charts{}/chartConfigs{}/mkChart() 一套
+ * 平行機制，兩者互不知曉彼此追蹤的圖表（詳見 main.js::mkChart() 前的
+ * 說明註解）。本檔案負責 destroy 生命週期安全（已解決原本三套並行的
+ * destroy 洩漏問題），但尚未涵蓋 main.js 的水平捲動包裝寬度計算。
  */
 const ChartRegistry = (() => {
   // canvasId → Chart instance

@@ -19,13 +19,13 @@ function escapeHtml(s) {
 const safeSvgAttr = escapeHtml;
 
 // ══════════════════════════════════════════════════════════
-// UTILITIES — 共用防抖動 (debounce) 工具（31 號規劃書）
+// UTILITIES — 共用防抖動 (debounce) 工具
 // ══════════════════════════════════════════════════════════
 // 用途：cSearch／cSearchRetake 輸入框，避免每個按鍵都立即觸發完整搜尋＋渲染。
 // 回傳函式具備 .cancel()，供「清空搜尋框」時取消尚未執行的舊查詢，避免舊查詢在
 // 清空後才延遲觸發、讓已清空的畫面又跳出過期結果。
 // 定位：UX 互動調整（避免下拉結果快速輸入時逐鍵閃動），非效能優化——單次搜尋掃描
-// 本身已在 1-5ms 級（見 30 號規格書待辦A，已決議暫不處理索引結構）。
+// 本身已在 1-5ms 級（已決議暫不處理索引結構）。
 // 放置於檔案最上方：本函式與常數被 onCRetakeSearch（PANEL C 整合控制器區塊）等
 // 位於檔案較前段的程式碼使用，const 宣告必須早於所有使用點，否則會出現
 // 「Cannot access before initialization」的暫時死區（TDZ）錯誤。
@@ -295,10 +295,17 @@ function prepareScrollableChart(canvas, config) {
 }
 
 function resizeAllCharts() {
+  // PERF-2（穿透式效能審查）：ResizeObserver 在任何 chart-wrap 從
+  // display:none 變為可見時都會觸發（例如切換分頁），進而呼叫本函式。
+  // 原本會遍歷 charts registry 內「所有曾經建立過的圖表」逐一
+  // resize()，包含當下仍隱藏在其他分頁裡的圖表——這些圖表resize
+  // 沒有任何使用者可感知的效果，純屬白工。改為先過濾掉
+  // canvas.offsetParent === null（被 display:none 祖先隱藏）的項目，
+  // 只處理目前實際可見的圖表。
   Object.entries(charts).forEach(([id, chart]) => {
     const canvas = document.getElementById(id);
     const config = chartConfigs[id];
-    if (!canvas || !config) return;
+    if (!canvas || !config || canvas.offsetParent === null) return;
     prepareScrollableChart(canvas, config);
     chart.resize();
   });
@@ -319,6 +326,21 @@ function observeChartWrap(canvas) {
   chartResizeObserver.observe(wrap);
 }
 
+// ARCH-NOTE（穿透式效能審查發現，0731）：本檔案的 charts{}/chartConfigs{}
+// + mkChart() 是圖表生命週期管理的其中一套機制；另有 chart-registry.js 的
+// ChartRegistry（tab-behavior-radar.js／time.js／correlation.js 直接用
+// `new Chart(...)` + `ChartRegistry.register()`，完全繞過 mkChart()）。
+// 兩套並行的結果：resizeAllCharts()（下方）只遍歷 charts{}，看不到
+// ChartRegistry 追蹤的圖表；後者也因此從未套用 prepareScrollableChart()／
+// observeChartWrap()（水平捲動包裝寬度計算＋自訂ResizeObserver）。
+// 已實測評估此差異的實際影響：estimateChartMinWidth() 目前的實作幾乎等同
+// viewportWidth（只有280px下限、並未依資料點數量加寬），故即使補上
+// prepareScrollableChart()，計算出的寬度與圖表現況也不會有顯著差異；
+//加上Chart.js本身responsive:true已有內建的ResizeObserver與預設
+// autoSkip，缺少app自訂處理的圖表實測仍可正常渲染，並非破版等級的問題。
+// 結論：此為已知的架構債，記錄於此供未來若要做更大範圍圖表系統整合時
+// 參考，暫不在此輪修改，避免為了理論上的一致性而大範圍改動三個已穩定
+// 運作的分頁模組、換來不成比例的regression風險。
 function mkChart(id, config) {
   if (charts[id]) charts[id].destroy();
   const ctx = document.getElementById(id);
@@ -826,6 +848,42 @@ function getDComparableSemesters() {
   return (DATA?.meta?.semesters || []).filter(s => !incomplete.has(String(s)));
 }
 
+/**
+ * PERF-1 FIX（穿透式審查／效能優化）：data.json 是每次進站都會阻斷首屏渲染
+ * 的必要資料，實測體積 8.28MB，且原本沒有 .gz 版本（相較之下 behavior.json
+ * 早已透過 js/behavior-loader.js 的 _fetchWithGzFallback 提供 .gz，僅因
+ * behavior.json 屬「背景延遲載入」而非阻斷渲染，優先序原本較低）。
+ * 實測 gzip -9 可將 data.json 由 8.28MB 縮至 264KB（縮減96.8%），對行動網路
+ * 下的首次載入時間影響最大，故補上同款 gz-fallback 策略：
+ *   1. 優先嘗試 data.json.gz（伺服器可能已設 Content-Encoding:gzip 自動解壓，
+ *      或退而用 DecompressionStream 手動解壓）
+ *   2. .gz 不存在／解壓失敗 → 100%向下相容，退回原始 data.json（行為與
+ *      修正前完全一致，即使部署環境尚未產生 data.json.gz 也不影響運作）
+ * .gz 版本由 update-dashboard-after-etl.ps1 於每次複製資料檔後自動（重新）
+ * 產生，與 plain json 保持同步，避免手動維護造成新舊不一致。
+ */
+async function _fetchJsonWithGzFallback(baseUrl) {
+  try {
+    const res = await fetch(baseUrl + '.gz');
+    if (res.ok) {
+      const contentEncoding = res.headers.get('Content-Encoding');
+      let text;
+      if (!contentEncoding && typeof DecompressionStream !== 'undefined') {
+        const decompressed = res.body.pipeThrough(new DecompressionStream('gzip'));
+        text = await new Response(decompressed).text();
+      } else {
+        text = await res.text();
+      }
+      return JSON.parse(text);
+    }
+  } catch (e) {
+    console.warn(`[main] gz fetch/decompress/parse failed for ${baseUrl}.gz，fallback to plain JSON:`, e.message);
+  }
+  const res2 = await fetch(baseUrl);
+  if (!res2.ok) throw new Error(`HTTP ${res2.status}`);
+  return res2.json();
+}
+
 async function loadData() {
   if (location.protocol === 'file:') {
     document.getElementById('metaInfo').innerHTML =
@@ -834,9 +892,7 @@ async function loadData() {
     return;
   }
   try {
-    const res = await fetch('data/data.json');
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    DATA = await res.json();
+    DATA = await _fetchJsonWithGzFallback('data/data.json');
     normalizeData();
     if (typeof FilterEngine !== 'undefined') FilterEngine.buildIndex(DATA);
     init();
@@ -1730,7 +1786,7 @@ function onCRetakeSearch() {
     return;
   }
   // hint 隱藏維持即時：這是「輸入是否已達最短長度」的狀態回饋，非搜尋結果本身，
-  // 不應隨防抖延遲（31 號規劃書 §2.4 決議）。
+  // 不應隨防抖延遲（設計決議）。
   if (hint) hint.style.setProperty('display', 'none');
 
   _debouncedRetakeSearchRun(q);

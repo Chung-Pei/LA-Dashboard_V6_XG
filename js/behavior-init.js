@@ -34,6 +34,18 @@
 .ladash-dim-xs      { font-size: 10px; color: var(--text-dim, #888); }
 .ladash-h180        { height: 180px; }
 
+/* ── UI-HSCROLL-1 (0730)：隱藏式橫向捲動列 ──────────────── */
+/* 用於膠囊按鈕群組（學習行為子分頁／高風險報告學期篩選）：單列排列、
+   捲軸隱藏但保留左右拖曳捲動（觸控/滑鼠皆可）。 */
+.ladash-hscroll-row {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;      /* Firefox */
+  -ms-overflow-style: none;   /* 舊版 Edge/IE */
+}
+.ladash-hscroll-row::-webkit-scrollbar { display: none; }  /* Chrome/Safari/PWA WebView */
+
 /* ── Chart card title flex ──────────────────────────────── */
 .ladash-c-card-title-flex {
   margin: 0;
@@ -367,6 +379,8 @@
 .behavior-sub-btn {
   background: transparent;
   color: var(--accent, #3498db);
+  flex-shrink: 0;      /* UI-HSCROLL-1 FIX(0730)：橫向捲動列中禁止被壓縮 */
+  white-space: nowrap;
 }
 .behavior-sub-btn.is-active {
   background: var(--accent, #3498db);
@@ -513,6 +527,31 @@ const BehaviorTabManager = (() => {
     }
   }
 
+  // OPT-BI-1(0802): 抽取自 switchSub 的通用子分頁初始化 helper
+  // 消除原本 5 段結構完全相同的 if 塊（共 ~80 行重複碼）
+  // initArgs: 傳給 TabModule.init() 的額外引數（correlation 需傳 containerId/scatterSectionId）
+  async function _initSub(sub, key, TabModule, errorContainerId, label, ...initArgs) {
+    if (sub !== key || _init[key] || _switching.has(key)) return false;
+    _switching.add(key);
+    if (typeof TabModule === 'undefined' || typeof TabModule.init !== 'function') {
+      console.error(`[BehaviorTabManager] ${TabModule?.constructor?.name ?? key} 模組未載入`);
+      _showSubError(errorContainerId, label);
+      _switching.delete(key);
+      return false;
+    }
+    try {
+      await TabModule.init(...initArgs);
+      _init[key] = true;
+      return true;
+    } catch (e) {
+      console.error(`[BehaviorTabManager] ${key} init:`, e);
+      _showSubError(errorContainerId, label);
+      return false;
+    } finally {
+      _switching.delete(key);
+    }
+  }
+
   async function switchSub(sub) {
     _setSubBtn(sub);
     // BUG-BI-2 FIX: 子面板在 HTML 中以 style="display:none" 初始隱藏，
@@ -528,110 +567,15 @@ const BehaviorTabManager = (() => {
     });
     let didInit = false;
 
-    if (sub === 'correlation' && !_init.correlation && !_switching.has('correlation')) {
-      _switching.add('correlation');
-      if (typeof BehaviorCorrelationTab === 'undefined' ||
-          typeof BehaviorCorrelationTab.init !== 'function') {
-        console.error('[BehaviorTabManager] BehaviorCorrelationTab 模組未載入');
-        _showSubError('corrHeatmap', '相關性分析');
-        _switching.delete('correlation');
-      } else {
-        try {
-          await BehaviorCorrelationTab.init('corrHeatmap', 'scatterSection');
-          _init.correlation = true;
-          didInit = true;
-        } catch (e) {
-          console.error('[BehaviorTabManager] correlation init:', e);
-          _showSubError('corrHeatmap', '相關性分析');
-        } finally {
-          _switching.delete('correlation');
-        }
-      }
-    }
-
-    if (sub === 'time' && !_init.time && !_switching.has('time')) {
-      _switching.add('time');
-      if (typeof BehaviorTimeTab === 'undefined' ||
-          typeof BehaviorTimeTab.init !== 'function') {
-        console.error('[BehaviorTabManager] BehaviorTimeTab 模組未載入');
-        _showSubError('sub-time', '時間分析');
-        _switching.delete('time');
-      } else {
-        try {
-          await BehaviorTimeTab.init();
-          _init.time = true;
-          didInit = true;
-        } catch (e) {
-          console.error('[BehaviorTabManager] time init:', e);
-          _showSubError('sub-time', '時間分析');
-        } finally {
-          _switching.delete('time');
-        }
-      }
-    }
-
-    if (sub === 'lsa' && !_init.lsa && !_switching.has('lsa')) {
-      _switching.add('lsa');
-      if (typeof BehaviorLsaTab === 'undefined' ||
-          typeof BehaviorLsaTab.init !== 'function') {
-        console.error('[BehaviorTabManager] BehaviorLsaTab 模組未載入');
-        _showSubError('sub-lsa', 'LSA 序列分析');
-        _switching.delete('lsa');
-      } else {
-        try {
-          await BehaviorLsaTab.init();
-          _init.lsa = true;
-          didInit = true;
-        } catch (e) {
-          console.error('[BehaviorTabManager] lsa init:', e);
-          _showSubError('sub-lsa', 'LSA 序列分析');
-        } finally {
-          _switching.delete('lsa');
-        }
-      }
-    }
-
-    if (sub === 'cross' && !_init.cross && !_switching.has('cross')) {
-      _switching.add('cross');
-      if (typeof BehaviorCrossTab === 'undefined' ||
-          typeof BehaviorCrossTab.init !== 'function') {
-        console.error('[BehaviorTabManager] BehaviorCrossTab 模組未載入');
-        _showSubError('sub-cross', '行為預測分析');
-        _switching.delete('cross');
-      } else {
-        try {
-          await BehaviorCrossTab.init();
-          _init.cross = true;
-          didInit = true;
-        } catch (e) {
-          console.error('[BehaviorTabManager] cross init:', e);
-          _showSubError('sub-cross', '行為預測分析');
-        } finally {
-          _switching.delete('cross');
-        }
-      }
-    }
-
-    if (sub === 'warning' && !_init.warning && !_switching.has('warning')) {
-      _switching.add('warning');
-      if (typeof BehaviorWarningTab === 'undefined' ||
-          typeof BehaviorWarningTab.init !== 'function') {
-        console.error('[BehaviorTabManager] BehaviorWarningTab 模組未載入');
-        _showSubError('sub-warning', '提前預警');
-        _switching.delete('warning');
-      } else {
-        try {
-          await BehaviorWarningTab.init();
-          _init.warning = true;
-          didInit = true;
-        } catch (e) {
-          console.error('[BehaviorTabManager] warning init:', e);
-          _showSubError('sub-warning', '提前預警');
-        } finally {
-          _switching.delete('warning');
-        }
-      }
-    }
+    // OPT-BI-1(0802): 5 個結構相同的 if 塊抽為 _initSub() 呼叫
+    // BUG-BI-3 FIX(0802 第四輪)：_initSub 為 switchSub 的同層（非巢狀）函式，
+    // 不共享 switchSub(sub) 參數的closure；原版在 _initSub 內直接引用 `sub`
+    // 導致 ReferenceError（switchSub 每次呼叫必炸），已改為顯式傳入。
+    didInit = await _initSub(sub, 'correlation', BehaviorCorrelationTab, 'corrHeatmap', '相關性分析', 'corrHeatmap', 'scatterSection') || didInit;
+    didInit = await _initSub(sub, 'time',        BehaviorTimeTab,        'sub-time',    '時間分析')        || didInit;
+    didInit = await _initSub(sub, 'lsa',         BehaviorLsaTab,         'sub-lsa',     'LSA 序列分析')    || didInit;
+    didInit = await _initSub(sub, 'cross',       BehaviorCrossTab,       'sub-cross',   '行為預測分析')    || didInit;
+    didInit = await _initSub(sub, 'warning',     BehaviorWarningTab,     'sub-warning', '提前預警')        || didInit;
 
     if (didInit) {
       if (typeof attachHelpButtons === 'function')        attachHelpButtons();

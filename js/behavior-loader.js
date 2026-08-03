@@ -31,7 +31,7 @@ const BehaviorLoader = (() => {
   // Must match sw.js BUILD_VERSION and index.html's JS ?v= parameter.
   // A new value makes every JSON request a new URL, so an older Service
   // Worker or browser HTTP cache cannot return a prior ETL result.
-  const DATA_VERSION = "202607301444";
+  const DATA_VERSION = "202608031108";
 
   // ── 同時請求去重（避免多個 Tab 並發初始化時重複 fetch）─────
   // 例：sub-warning 與 Tab R 的 lazyInit 可能在同一時刻
@@ -177,9 +177,14 @@ const BehaviorLoader = (() => {
     // behavior.json 體積最大（5.5MB），優先嘗試 .gz
     behavior:    () => _fetchWithGzFallback("behavior", DATA_ROOT + "behavior.json"),
     radar:       () => fetchJSON("radar",       DATA_ROOT + "radar_chart_data.json"),
-    correlation: () => fetchJSON("correlation", DATA_ROOT + "correlation_matrix.json"),
+    // PERF-1（穿透式效能審查）：correlation_matrix.json（3.6MB）、
+    // time_distribution.json（11.5MB，全站最大單一檔案）改用gz-fallback。
+    // .gz 由 update-dashboard-after-etl.ps1 部署時自動產生（見該腳本
+    // Update-GzipCounterpart），非ETL端輸出；找不到.gz時自動退回純文字版，
+    // 兩種情況前端行為完全一致，僅傳輸體積不同。
+    correlation: () => _fetchWithGzFallback("correlation", DATA_ROOT + "correlation_matrix.json"),
     quiz:        () => fetchJSON("quiz",        DATA_ROOT + "quiz_behavior.json"),
-    time:        () => fetchJSON("time",        DATA_ROOT + "time_distribution.json"),
+    time:        () => _fetchWithGzFallback("time",        DATA_ROOT + "time_distribution.json"),
     atRisk:      () => fetchJSON("atRisk",      DATA_ROOT + "at_risk_profile.json"),
     crossAnalysis: () => fetchJSON("crossAnalysis", DATA_ROOT + "cross_analysis.json"),
     warning:     (semester) => fetchJSON(`warning_${semester}`, DATA_ROOT + `warning_${semester}.json`),

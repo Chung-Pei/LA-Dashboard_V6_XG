@@ -207,7 +207,7 @@ const AtRiskReportManager = (() => {
       renderRadarChart(semData.metrics_comparison);
       renderTemporalChart(semData.temporal_decay);
       renderRedFlags(semData.behavioral_markers, semData.temporal_decay, semData.reading_integrity);
-      renderPrescriptions(semData.prescriptive_summary);
+      renderPrescriptions(semData.prescriptive_summary); // __all__ 過濾已內建於 renderPrescriptions()
       renderTopRiskFactors(_featureImportance);
     } catch (e) {
       console.error('[AtRiskReportManager] 學期切換渲染失敗：', sem, e);
@@ -359,35 +359,44 @@ const AtRiskReportManager = (() => {
     );
 
     let annotationPlugin = {};
-    try {
-      if (window.ChartAnnotation) Chart.register(window.ChartAnnotation);
-      const midWeekLabel = `Week ${td.midterm_week_num}`;
-      const midIdx = weeks.indexOf(midWeekLabel);
-      if (midIdx >= 0) {
-        annotationPlugin = {
-          annotation: {
-            annotations: {
-              midtermLine: {
-                type: 'line',
-                xMin: midIdx, xMax: midIdx,
-                borderColor: 'rgba(231,76,60,0.7)',
-                borderWidth: 2,
-                borderDash: [6, 3],
-                label: {
-                  content:  `期中考 W${td.midterm_week_num}`,
-                  display:  true,
-                  position: 'start',
-                  color:    '#e74c3c',
-                  font:     { size: 11 },
-                  backgroundColor: 'rgba(255,255,255,0.85)',
+    // UI-MIDTERM-3 FIX(0730)：「全部」聚合視圖橫跨多個學期，期中考週次
+    // 本身因學期而異（W8 或 W9，見 SIXTEEN_PLUS_TWO_SEMS 同款判斷邏輯，
+    // tab-behavior-time.js），td.midterm_week_num 在此聚合維度下僅為單一
+    // 代表值、不具「唯一正確週次」意義，標示出來反而誤導使用者。
+    // 因此「全部」一律不繪製期中考標注線／文字備注；僅切至個別學期
+    // （_currentSem !== '__all__'）時才標示，此時midterm_week_num來自
+    // 該學期實際考試日期換算，具體指涉單一週次。
+    if (_currentSem !== '__all__') {
+      try {
+        if (window.ChartAnnotation) Chart.register(window.ChartAnnotation);
+        const midWeekLabel = `Week ${td.midterm_week_num}`;
+        const midIdx = weeks.indexOf(midWeekLabel);
+        if (midIdx >= 0) {
+          annotationPlugin = {
+            annotation: {
+              annotations: {
+                midtermLine: {
+                  type: 'line',
+                  xMin: midIdx, xMax: midIdx,
+                  borderColor: 'rgba(231,76,60,0.7)',
+                  borderWidth: 2,
+                  borderDash: [6, 3],
+                  label: {
+                    content:  `期中考 W${td.midterm_week_num}`,
+                    display:  true,
+                    position: 'start',
+                    color:    '#e74c3c',
+                    font:     { size: 11 },
+                    backgroundColor: 'rgba(255,255,255,0.85)',
+                  }
                 }
               }
             }
-          }
-        };
+          };
+        }
+      } catch(e) {
+        console.warn('[AtRisk] chartjs-plugin-annotation 載入失敗，期中考標注線以文字替代', e);
       }
-    } catch(e) {
-      console.warn('[AtRisk] chartjs-plugin-annotation 載入失敗，期中考標注線以文字替代', e);
     }
 
     const { text: clrText, textDim: clrTextDim, border: clrBorder } = _resolveThemeColors();
@@ -430,9 +439,14 @@ const AtRiskReportManager = (() => {
       }
     });
 
-    if (!Object.keys(annotationPlugin).length) {
-      // WARN-1 FIX: 清除舊備注節點，防止 switchSemester 重複 append
-      canvas.parentNode.querySelectorAll('.__midterm-note').forEach(n => n.remove());
+    // WARN-1 FIX: 清除舊備注節點，防止 switchSemester 重複 append（不論本次
+    // 是否需要顯示新備注都要先清，否則「全部」切換回來會殘留上次個別學期
+    // 的舊備注文字）。
+    canvas.parentNode.querySelectorAll('.__midterm-note').forEach(n => n.remove());
+    // UI-MIDTERM-3 FIX(0730)：「全部」不顯示期中考備注（理由同上方
+    // annotationPlugin 判斷），即使annotation plugin本身不可用也不用文字
+    // 備注取代——因為「全部」下沒有單一正確週次可標示。
+    if (_currentSem !== '__all__' && !Object.keys(annotationPlugin).length) {
       const note = document.createElement('div');
       note.className = '__midterm-note ladash-midterm-note-style';
       note.textContent = `▲ 紅色虛線標注不可用。期中考：Week ${td.midterm_week_num}`;
@@ -578,7 +592,14 @@ const AtRiskReportManager = (() => {
       }
     }
 
-    const decayFail = td?.available ? td.post_midterm_decay_rate?.fail_group_median_pct : null;
+    // DECAY-ATRISK-1 FIX(0802)：「全部」聚合視圖的 post_midterm_decay_rate
+    // 借用單一學期曆法算出，對混合多學期的聚合樣本語意不成立；仿照
+    // renderTemporalChart()（UI-MIDTERM-3 FIX, 0730）與同函式內
+    // _buildWarningFlag()（WARN-ATRISK-1 FIX）既有的 __all__ 排除慣例，
+    // 在「全部」視圖一律不顯示此紅旗卡。
+    const decayFail = (td?.available && _currentSem !== '__all__')
+      ? td.post_midterm_decay_rate?.fail_group_median_pct
+      : null;
     if (decayFail != null && decayFail <= -35) {
       const absDecayFail = Math.abs(decayFail).toFixed(1);
       const absDecayPass = Math.abs(td.post_midterm_decay_rate?.pass_group_median_pct ?? 0).toFixed(1);
@@ -670,7 +691,9 @@ const AtRiskReportManager = (() => {
   }
 
   // ── §5.6 處方性建議 ──────────────────────────────────────
+  // DECAY-ATRISK-1(0802)：「全部」視圖過濾 post_midterm_decay_rate 項目（defense-in-depth）。
   function renderPrescriptions(ps) {
+    if (_currentSem === '__all__') ps = (ps ?? []).filter(item => item.metric !== 'post_midterm_decay_rate');
     const el = document.getElementById('rPrescriptions');
     if (!el) return;
     const severityLabel = { critical: '高優先', warning: '中優先', info: '建議' };
@@ -813,6 +836,16 @@ const AtRiskReportManager = (() => {
     setTimeout(() => document.getElementById('__rPrintStyle')?.remove(), 1000);
   };
 
+  // ── 共用渲染入口（抽共用避免 lazyInit 重複六行） ────────
+  function _renderSemData(sd) {
+    renderCohortSummary(sd.cohort_summary);
+    renderRadarChart(sd.metrics_comparison);
+    renderTemporalChart(sd.temporal_decay);
+    renderRedFlags(sd.behavioral_markers, sd.temporal_decay, sd.reading_integrity);
+    renderPrescriptions(sd.prescriptive_summary);
+    renderTopRiskFactors(_featureImportance);
+  }
+
   // ── 主要初始化（lazyInit 模式） ──────────────────────────
   // ── §0 模組樣式注入（CSP 合規：adoptedStyleSheets，無 <style> 標籤） ──
   // adoptedStyleSheets 屬於 JS DOM API（script-src 管轄），
@@ -866,6 +899,8 @@ const AtRiskReportManager = (() => {
         color: var(--text, #333);
         cursor: pointer;
         transition: background .15s, color .15s;
+        flex-shrink: 0;      /* UI-HSCROLL-1 FIX(0730)：橫向捲動列中禁止被壓縮 */
+        white-space: nowrap;
       }
 
       /* ── §5.5 / §5.6 共用 ──────────────────────────────── */
@@ -1086,21 +1121,11 @@ const AtRiskReportManager = (() => {
         _currentSemData = _data.by_semester[def];
 
         renderSemesterFilter(sems, def);
-        renderCohortSummary(_currentSemData.cohort_summary);
-        renderRadarChart(_currentSemData.metrics_comparison);
-        renderTemporalChart(_currentSemData.temporal_decay);
-        renderRedFlags(_currentSemData.behavioral_markers, _currentSemData.temporal_decay, _currentSemData.reading_integrity);
-        renderPrescriptions(_currentSemData.prescriptive_summary);
-        renderTopRiskFactors(_featureImportance);
+        _renderSemData(_currentSemData);
 
       // schema 2.x：降級單學期
       } else {
-        renderCohortSummary(_data.cohort_summary);
-        renderRadarChart(_data.metrics_comparison);
-        renderTemporalChart(_data.temporal_decay);
-        renderRedFlags(_data.behavioral_markers, _data.temporal_decay, _data.reading_integrity);
-        renderPrescriptions(_data.prescriptive_summary);
-        renderTopRiskFactors(_featureImportance);
+        _renderSemData(_data);
       }
 
       rLoading.style.setProperty('display', 'none');
