@@ -13,17 +13,17 @@
   "default_semester": "114(2)",
   "course_id": "11411112000550106041358-CM",
   "course_name": "微生物及免疫學(合併班)",
-  "generated_at": "2026-07-28T20:47:06.490960",
+  "generated_at": "2026-08-03T11:06:54.573726",
   "all_semesters": {
     "semester": "all",
     "course_id": "11411112000550106041358-CM",
     "course_name": "微生物及免疫學(合併班)",
-    "generated_at": "2026-07-28T20:47:06.438105",
+    "generated_at": "2026-08-03T11:06:54.521140",
     "cohort_summary": {
       "total_students": 2918,
-      "pass_count": 2227,
-      "fail_count": 679,
-      "unsettled_count": 12,
+      "pass_count": 2228,
+      "fail_count": 680,
+      "unsettled_count": 10,
       "fail_rate_pct": 23.4
     },
     "metrics_comparison": {
@@ -49,25 +49,25 @@
         "raw_fail_median": 0.0816
       },
       "pre_exam_intensity": {
-        "pass_median_normalized": 1.3,
-        "fail_median_normalized": 1.5,
-        "gap_percentage": "+15.4%",
-        "raw_pass_median": 0.5236,
-        "raw_fail_median": 0.5949
+        "pass_median_normalized": 1.8,
+        "fail_median_normalized": 2.1,
+        "gap_percentage": "+16.7%",
+        "raw_pass_median": 0.7382,
+        "raw_fail_median": 0.8625
       },
       "learning_stability": {
-        "pass_median_normalized": 14.8,
+        "pass_median_normalized": 14.9,
         "fail_median_normalized": 14.9,
-        "gap_percentage": "+0.7%",
-        "raw_pass_median": 0.1483,
+        "gap_percentage": "+0.0%",
+        "raw_pass_median": 0.1484,
         "raw_fail_median": 0.1485
       },
       "audio_material_hours": {
         "pass_median_normalized": 0.4,
         "fail_median_normalized": 0.3,
         "gap_percentage": "-25.0%",
-        "raw_pass_median": 206.43,
-        "raw_fail_median": 173.52
+        "raw_pass_median": 206.465,
+        "raw_fail_median": 175.595
       }
     },
     "behavioral_markers": {
@@ -83,88 +83,85 @@
         {
           "metric": "text_material_completion",
           "threshold_pct": 20,
-          "ratio_in_fail_group": 0.417,
+          "ratio_in_fail_group": 0.416,
           "ratio_in_pass_group": 0.3
         },
         {
           "metric": "supplementary_completion",
           "threshold_pct": 20,
-          "ratio_in_fail_group": 0.641,
+          "ratio_in_fail_group": 0.64,
           "ratio_in_pass_group": 0.539
         },
         {
           "metric": "tutoring_resource_rate",
           "threshold_pct": 20,
-          "ratio_in_fail_group": 0.627,
+          "ratio_in_fail_group": 0.626,
           "ratio_in_pass_group": 0.548
         }
       ]
     },
     "reading_integrity": {
       "fail_group": {
-        "n_total": 679,
+        "n_total": 680,
         "n_flagged": 81,
         "flagged_pct": 0.119,
         "avg_inflation_ratio": 1.596
       },
       "pass_group": {
-        "n_total": 2227,
+        "n_total": 2228,
         "n_flagged": 180,
         "flagged_pct": 0.081,
-        "avg_inflation_ratio": 1.612
+        "avg_inflation_ratio": 1.611
       }
     },
     "temporal_decay": {
       "available": true,
-      "midterm_week_num": 8,
+      "midterm_week_num": null,
       "consecutive_zero_weeks": {
         "fail_group_median": 3.0,
         "pass_group_median": 3.0
       },
-      "post_midterm_decay_rate": {
-        "fail_group_median_pct": 8.5,
-        "pass_group_median_pct": -14.0
-      },
+      "post_midterm_decay_rate": null,
       "weekly_activity_series": {
         "fail_group": {
-          "Week 1": 240.9,
-          "Week 2": 193.7,
-          "Week 3": 169.3,
-          "Week 4": 487.4,
-          "Week 5": 190.9,
-          "Week 6": 295.0,
-          "Week 7": 560.1,
-          "Week 8": 546.3,
-          "Week 9": 186.0,
-          "Week 10": 87.7,
-          "Week 11": 151.6,
-          "Week 12": 261.1,
-          "Week 13": 259.4,
-          "Week 14": 338.4,
-          "Week 15": 382.4,
-          "Week 16": 876.0,
-          "Week 17": 421.0,
-          "Week 18": 349.6
+          "Week 1": 242.0,
+          "Week 2": 193.4,
+          "Week 3": 169.2,
+          "Week 4": 486.7,
+          "Week 5": 190.6,
+          "Week 6": 294.5,
+          "Week 7": 559.3,
+          "Week 8": 551.8,
+          "Week 9": 185.7,
+          "Week 10": 87.6,
+          "Week 11": 151.4,
+          "Week 12": 261.5,
+          "Week 13": 259.0,
+          "Week 14": 339.9,
+          "Week 15": 382.6,
+          "Week 16": 876.6,
+          "Week 17": 422.3,
+          "Week 18": 352.5
         },
         "pass_group": {
-          "Week 1": 334.6,
+          "Week 1": 334.4,
           "Week 2": 250.3,
           "Week 3": 290.8,
-          "Week 4": 284.1,
-          "Week 5": 281.8,
-          "Week 6": 374.8,
-          "Week 7": 586.8,
-          "Week 8": 560.4,
-          "Week 9": 200.1,
-          "Week 10": 155.1,
-          "Week 11": 254.8,
-          "Week 12": 164.4,
+          "Week 4": 284.0,
+          "Week 5": 281.6,
+          "Week 6": 374.7,
+          "Week 7": 586.6,
+          "Week 8": 560.2,
+          "Week 9": 200.0,
+          "Week 10": 155.0,
+          "Week 11": 254.7,
+          "Week 12": 164.3,
           "Week 13": 195.2,
           "Week 14": 345.0,
-          "Week 15": 466.6,
-          "Week 16": 491.0,
-          "Week 17": 427.7,
-          "Week 18": 252.9
+          "Week 15": 466.5,
+          "Week 16": 490.9,
+          "Week 17": 427.5,
+          "Week 18": 252.8
         }
       }
     },
@@ -197,7 +194,7 @@
       "semester": "111(1)",
       "course_id": "11111112000550107191346-CM",
       "course_name": "微生物及免疫學(合併班)",
-      "generated_at": "2026-07-28T20:47:06.367290",
+      "generated_at": "2026-08-03T11:06:54.446421",
       "cohort_summary": {
         "total_students": 480,
         "pass_count": 410,
@@ -362,13 +359,13 @@
       "semester": "111(2)",
       "course_id": "11121114000550101171224-CM",
       "course_name": "微生物及免疫學(合併班)",
-      "generated_at": "2026-07-28T20:47:06.377968",
+      "generated_at": "2026-08-03T11:06:54.457863",
       "cohort_summary": {
         "total_students": 225,
         "pass_count": 165,
-        "fail_count": 58,
-        "unsettled_count": 2,
-        "fail_rate_pct": 26.0
+        "fail_count": 59,
+        "unsettled_count": 1,
+        "fail_rate_pct": 26.3
       },
       "metrics_comparison": {
         "text_material_completion": {
@@ -393,25 +390,25 @@
           "raw_fail_median": 0.0408
         },
         "pre_exam_intensity": {
-          "pass_median_normalized": 50.0,
-          "fail_median_normalized": 50.0,
-          "gap_percentage": "+0.0%",
-          "raw_pass_median": 0.0,
-          "raw_fail_median": 0.0
+          "pass_median_normalized": 9.1,
+          "fail_median_normalized": 13.5,
+          "gap_percentage": "+48.4%",
+          "raw_pass_median": 0.6686,
+          "raw_fail_median": 0.9889
         },
         "learning_stability": {
           "pass_median_normalized": 46.5,
-          "fail_median_normalized": 48.4,
-          "gap_percentage": "+4.1%",
+          "fail_median_normalized": 47.8,
+          "gap_percentage": "+2.8%",
           "raw_pass_median": 0.1825,
-          "raw_fail_median": 0.189
+          "raw_fail_median": 0.1871
         },
         "audio_material_hours": {
           "pass_median_normalized": 0.0,
           "fail_median_normalized": 0.0,
           "gap_percentage": "+0.0%",
           "raw_pass_median": 0.55,
-          "raw_fail_median": 0.29
+          "raw_fail_median": 0.3
         }
       },
       "behavioral_markers": {
@@ -420,35 +417,35 @@
           "pass_group_mode": 0,
           "critical_weeks": [
             12,
-            6
+            10
           ]
         },
         "low_completion_flags": [
           {
             "metric": "text_material_completion",
             "threshold_pct": 20,
-            "ratio_in_fail_group": 0.483,
+            "ratio_in_fail_group": 0.475,
             "ratio_in_pass_group": 0.376
           },
           {
             "metric": "supplementary_completion",
             "threshold_pct": 20,
-            "ratio_in_fail_group": 0.741,
+            "ratio_in_fail_group": 0.729,
             "ratio_in_pass_group": 0.667
           },
           {
             "metric": "tutoring_resource_rate",
             "threshold_pct": 20,
-            "ratio_in_fail_group": 0.707,
+            "ratio_in_fail_group": 0.695,
             "ratio_in_pass_group": 0.636
           }
         ]
       },
       "reading_integrity": {
         "fail_group": {
-          "n_total": 58,
+          "n_total": 59,
           "n_flagged": 10,
-          "flagged_pct": 0.172,
+          "flagged_pct": 0.169,
           "avg_inflation_ratio": 1.346
         },
         "pass_group": {
@@ -460,35 +457,35 @@
       },
       "temporal_decay": {
         "available": true,
-        "midterm_week_num": 1,
+        "midterm_week_num": 9,
         "consecutive_zero_weeks": {
           "fail_group_median": 3.0,
           "pass_group_median": 3.0
         },
         "post_midterm_decay_rate": {
-          "fail_group_median_pct": 0.0,
-          "pass_group_median_pct": 0.0
+          "fail_group_median_pct": -10.1,
+          "pass_group_median_pct": -20.4
         },
         "weekly_activity_series": {
           "fail_group": {
-            "Week 1": 43.7,
-            "Week 2": 81.7,
-            "Week 3": 86.4,
-            "Week 4": 100.2,
-            "Week 5": 119.1,
-            "Week 6": 128.2,
-            "Week 7": 220.3,
-            "Week 8": 549.5,
-            "Week 9": 262.3,
-            "Week 10": 28.1,
-            "Week 11": 26.7,
-            "Week 12": 43.4,
-            "Week 13": 61.5,
-            "Week 14": 88.5,
-            "Week 15": 114.2,
-            "Week 16": 109.0,
-            "Week 17": 342.8,
-            "Week 18": 497.9
+            "Week 1": 60.3,
+            "Week 2": 80.4,
+            "Week 3": 87.4,
+            "Week 4": 98.5,
+            "Week 5": 117.1,
+            "Week 6": 126.0,
+            "Week 7": 216.6,
+            "Week 8": 612.3,
+            "Week 9": 257.9,
+            "Week 10": 27.7,
+            "Week 11": 26.3,
+            "Week 12": 52.1,
+            "Week 13": 60.5,
+            "Week 14": 110.2,
+            "Week 15": 120.8,
+            "Week 16": 128.5,
+            "Week 17": 359.1,
+            "Week 18": 528.6
           },
           "pass_group": {
             "Week 1": 100.7,
@@ -517,7 +514,7 @@
           "severity": "critical",
           "metric": "tutoring_resource_rate",
           "trigger_condition": "ratio_in_fail_group >= 0.40",
-          "finding": "71% 的不及格學生輔導資源完成率低於 20%，遠高於及格組的 64%。",
+          "finding": "70% 的不及格學生輔導資源完成率低於 20%，遠高於及格組的 64%。",
           "action": "建議下學期開學第一週即宣導輔導資源使用方式，並於第 4 週前設定強制完成里程碑。"
         },
         {
@@ -540,7 +537,7 @@
       "semester": "112(1)",
       "course_id": "11211112000550107051104-CM",
       "course_name": "微生物及免疫學(合併班)",
-      "generated_at": "2026-07-28T20:47:06.384693",
+      "generated_at": "2026-08-03T11:06:54.464644",
       "cohort_summary": {
         "total_students": 508,
         "pass_count": 408,
@@ -705,7 +702,7 @@
       "semester": "112(2)",
       "course_id": "11221114000550101221617-CM",
       "course_name": "微生物及免疫學(合併班)",
-      "generated_at": "2026-07-28T20:47:06.394861",
+      "generated_at": "2026-08-03T11:06:54.475441",
       "cohort_summary": {
         "total_students": 236,
         "pass_count": 172,
@@ -736,11 +733,11 @@
           "raw_fail_median": 0.0408
         },
         "pre_exam_intensity": {
-          "pass_median_normalized": 50.0,
-          "fail_median_normalized": 50.0,
-          "gap_percentage": "+0.0%",
-          "raw_pass_median": 0.0,
-          "raw_fail_median": 0.0
+          "pass_median_normalized": 5.7,
+          "fail_median_normalized": 6.8,
+          "gap_percentage": "+19.3%",
+          "raw_pass_median": 1.1821,
+          "raw_fail_median": 1.4018
         },
         "learning_stability": {
           "pass_median_normalized": 22.2,
@@ -803,14 +800,14 @@
       },
       "temporal_decay": {
         "available": true,
-        "midterm_week_num": 1,
+        "midterm_week_num": 8,
         "consecutive_zero_weeks": {
           "fail_group_median": 4.0,
           "pass_group_median": 3.0
         },
         "post_midterm_decay_rate": {
-          "fail_group_median_pct": 0.0,
-          "pass_group_median_pct": 0.0
+          "fail_group_median_pct": -8.6,
+          "pass_group_median_pct": -25.8
         },
         "weekly_activity_series": {
           "fail_group": {
@@ -876,7 +873,7 @@
       "semester": "113(1)",
       "course_id": "11311112000550106121030-CM",
       "course_name": "微生物及免疫學(合併班)",
-      "generated_at": "2026-07-28T20:47:06.401039",
+      "generated_at": "2026-08-03T11:06:54.482225",
       "cohort_summary": {
         "total_students": 475,
         "pass_count": 422,
@@ -1021,7 +1018,7 @@
       "semester": "113(2)",
       "course_id": "11321114000550101021402-CM",
       "course_name": "微生物及免疫學(合併班)",
-      "generated_at": "2026-07-28T20:47:06.410620",
+      "generated_at": "2026-08-03T11:06:54.492250",
       "cohort_summary": {
         "total_students": 236,
         "pass_count": 115,
@@ -1192,7 +1189,7 @@
       "semester": "114(1)",
       "course_id": "11411112000550106041358-CM",
       "course_name": "微生物及免疫學(合併班)",
-      "generated_at": "2026-07-28T20:47:06.418056",
+      "generated_at": "2026-08-03T11:06:54.499106",
       "cohort_summary": {
         "total_students": 509,
         "pass_count": 404,
@@ -1364,13 +1361,13 @@
       "semester": "114(2)",
       "course_id": "11421114000550101150912-CM",
       "course_name": "微生物及免疫學(合併班)",
-      "generated_at": "2026-07-28T20:47:06.428824",
+      "generated_at": "2026-08-03T11:06:54.511508",
       "cohort_summary": {
         "total_students": 249,
-        "pass_count": 131,
+        "pass_count": 132,
         "fail_count": 117,
-        "unsettled_count": 1,
-        "fail_rate_pct": 47.2
+        "unsettled_count": 0,
+        "fail_rate_pct": 47.0
       },
       "metrics_comparison": {
         "text_material_completion": {
@@ -1381,10 +1378,10 @@
           "raw_fail_median": 0.2604
         },
         "supplementary_completion": {
-          "pass_median_normalized": 10.3,
+          "pass_median_normalized": 9.0,
           "fail_median_normalized": 5.1,
-          "gap_percentage": "-50.5%",
-          "raw_pass_median": 0.0851,
+          "gap_percentage": "-43.3%",
+          "raw_pass_median": 0.0744,
           "raw_fail_median": 0.0426
         },
         "tutoring_resource_rate": {
@@ -1395,24 +1392,24 @@
           "raw_fail_median": 0.0204
         },
         "pre_exam_intensity": {
-          "pass_median_normalized": 5.3,
+          "pass_median_normalized": 5.2,
           "fail_median_normalized": 5.0,
-          "gap_percentage": "-5.7%",
-          "raw_pass_median": 0.8973,
+          "gap_percentage": "-3.8%",
+          "raw_pass_median": 0.883,
           "raw_fail_median": 0.8433
         },
         "learning_stability": {
-          "pass_median_normalized": 17.2,
+          "pass_median_normalized": 17.3,
           "fail_median_normalized": 17.9,
-          "gap_percentage": "+4.1%",
-          "raw_pass_median": 0.172,
+          "gap_percentage": "+3.5%",
+          "raw_pass_median": 0.1722,
           "raw_fail_median": 0.1791
         },
         "audio_material_hours": {
           "pass_median_normalized": 0.2,
           "fail_median_normalized": 0.1,
           "gap_percentage": "-50.0%",
-          "raw_pass_median": 55.97,
+          "raw_pass_median": 57.085,
           "raw_fail_median": 17.65
         }
       },
@@ -1430,19 +1427,19 @@
             "metric": "text_material_completion",
             "threshold_pct": 20,
             "ratio_in_fail_group": 0.427,
-            "ratio_in_pass_group": 0.313
+            "ratio_in_pass_group": 0.318
           },
           {
             "metric": "supplementary_completion",
             "threshold_pct": 20,
             "ratio_in_fail_group": 0.821,
-            "ratio_in_pass_group": 0.74
+            "ratio_in_pass_group": 0.742
           },
           {
             "metric": "tutoring_resource_rate",
             "threshold_pct": 20,
             "ratio_in_fail_group": 0.821,
-            "ratio_in_pass_group": 0.748
+            "ratio_in_pass_group": 0.75
           }
         ]
       },
@@ -1454,10 +1451,10 @@
           "avg_inflation_ratio": 1.408
         },
         "pass_group": {
-          "n_total": 131,
+          "n_total": 132,
           "n_flagged": 8,
           "flagged_pct": 0.061,
-          "avg_inflation_ratio": 1.381
+          "avg_inflation_ratio": 1.379
         }
       },
       "temporal_decay": {
@@ -1469,7 +1466,7 @@
         },
         "post_midterm_decay_rate": {
           "fail_group_median_pct": -10.5,
-          "pass_group_median_pct": -5.3
+          "pass_group_median_pct": -5.4
         },
         "weekly_activity_series": {
           "fail_group": {
@@ -1493,24 +1490,24 @@
             "Week 18": 473.2
           },
           "pass_group": {
-            "Week 1": 103.4,
-            "Week 2": 185.0,
-            "Week 3": 180.9,
-            "Week 4": 209.9,
-            "Week 5": 214.8,
-            "Week 6": 368.8,
-            "Week 7": 378.5,
-            "Week 8": 639.6,
-            "Week 9": 351.3,
-            "Week 10": 78.4,
-            "Week 11": 97.0,
-            "Week 12": 163.1,
-            "Week 13": 109.9,
-            "Week 14": 306.9,
-            "Week 15": 271.8,
-            "Week 16": 424.7,
-            "Week 17": 488.2,
-            "Week 18": 489.9
+            "Week 1": 102.6,
+            "Week 2": 186.4,
+            "Week 3": 181.0,
+            "Week 4": 210.0,
+            "Week 5": 213.2,
+            "Week 6": 366.8,
+            "Week 7": 376.4,
+            "Week 8": 636.0,
+            "Week 9": 348.6,
+            "Week 10": 77.8,
+            "Week 11": 96.3,
+            "Week 12": 162.4,
+            "Week 13": 109.6,
+            "Week 14": 306.7,
+            "Week 15": 270.6,
+            "Week 16": 423.0,
+            "Week 17": 484.8,
+            "Week 18": 486.2
           }
         }
       },
@@ -1526,7 +1523,7 @@
           "severity": "warning",
           "metric": "supplementary_completion",
           "trigger_condition": "gap_percentage <= -40.0%",
-          "finding": "不及格群體門檻解鎖教材（整理筆記/補充教材/動畫）完成率比及格組低 50.5%，顯示知識內化過程可能提早中斷。",
+          "finding": "不及格群體門檻解鎖教材（整理筆記/補充教材/動畫）完成率比及格組低 43.3%，顯示知識內化過程可能提早中斷。",
           "action": "建議將 SUP 類教材設計為分段式（每 2 週一個里程碑），並在完成率低於 30% 時觸發自動提醒。"
         },
         {

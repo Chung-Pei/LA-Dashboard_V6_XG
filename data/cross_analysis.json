@@ -4,8 +4,8 @@
     "edu_type": "theory",
     "practicum_excluded": true,
     "incomplete_semesters_excluded": [],
-    "n_total_records": 2912,
-    "n_with_final": 2905,
+    "n_total_records": 2914,
+    "n_with_final": 2907,
     "n_s_cluster_unclassified": 0,
     "n_r_cluster_unclassified": 0,
     "training_semesters": [
@@ -20,52 +20,52 @@
     ],
     "pass_threshold": 60,
     "training_semester_range": "111(1)-114(2)",
-    "generated_at": "2026-07-28T20:47:02"
+    "generated_at": "2026-08-03T11:06:50"
   },
   "overall": {
-    "n": 2905,
-    "mean_final": 68.92,
-    "sd_final": 13.96,
-    "fail_rate_final": 0.212,
-    "fail_rate_midterm": 0.3663,
+    "n": 2907,
+    "mean_final": 68.91,
+    "sd_final": 13.97,
+    "fail_rate_final": 0.2122,
+    "fail_rate_midterm": 0.3664,
     "trajectory": {
-      "SS": 0.5453,
-      "FS": 0.2427,
-      "SF": 0.0885,
-      "FF": 0.1236,
-      "n_with_midterm": 2905
+      "SS": 0.5452,
+      "FS": 0.2425,
+      "SF": 0.0884,
+      "FF": 0.1238,
+      "n_with_midterm": 2907
     },
     "approach": {
-      "DEEP": 0.2052,
-      "SURFACE": 0.6,
-      "MODERATE": 0.1948
+      "DEEP": 0.205,
+      "SURFACE": 0.6003,
+      "MODERATE": 0.1947
     }
   },
   "spearman": {
     "r_group_vs_final": {
-      "rho": 0.0765,
-      "p": 3.652040759577392e-05,
-      "n": 2905,
+      "rho": 0.0767,
+      "p": 3.514138027276873e-05,
+      "n": 2907,
       "note": "R cluster ordinal vs final score"
     },
     "s_group_vs_final": {
-      "rho": -0.1263,
-      "p": 8.273299482297193e-12,
-      "n": 2905,
+      "rho": -0.1259,
+      "p": 9.618786491611911e-12,
+      "n": 2907,
       "note": "S cluster ordinal vs final score"
     }
   },
   "bas_validation": {
     "quz_first_acc_r": {
-      "r": 0.301,
+      "r": 0.3019,
       "p": 0.0
     },
     "qmi_r": {
-      "r": 0.3072,
+      "r": 0.308,
       "p": 0.0
     },
     "bas_r": {
-      "r": 0.4537,
+      "r": 0.4507,
       "p": 0.0
     },
     "bas_weights": {
@@ -82,8 +82,8 @@
           0.0,
           0.45
         ],
-        "n": 565,
-        "fail_rate": 0.3628
+        "n": 566,
+        "fail_rate": 0.364
       },
       {
         "q": 2,
@@ -91,8 +91,8 @@
           0.45,
           0.5656
         ],
-        "n": 590,
-        "fail_rate": 0.2661
+        "n": 591,
+        "fail_rate": 0.2657
       },
       {
         "q": 3,
@@ -128,16 +128,16 @@
     "qmi_q2_2tech": 0.5667
   },
   "bas_auc": {
-    "auc": 0.7329,
-    "n": 2905
+    "auc": 0.7288,
+    "n": 2907
   },
   "xgb_validation": {
     "week_limit": 12,
-    "auc": 0.7766,
-    "precision": 0.5309,
-    "recall": 0.349,
-    "f1": 0.4212,
-    "accuracy": 0.7966,
+    "auc": 0.7827,
+    "precision": 0.5278,
+    "recall": 0.3533,
+    "f1": 0.4233,
+    "accuracy": 0.7957,
     "feature_version": "v4",
     "model_version": "xgb_v3",
     "training_semesters": [
@@ -165,156 +165,156 @@
       "4tech": {
         "high": 0.3,
         "medium": 0.3,
-        "high_precision": 0.5053,
-        "n": 942
+        "high_precision": 0.5108,
+        "n": 944
       },
       "2tech": {
-        "high": 0.3,
+        "high": 0.31,
         "medium": 0.3,
-        "high_precision": 0.4127,
+        "high_precision": 0.4063,
         "n": 1963
       },
       "combined": {
         "high": 0.3,
         "medium": 0.3,
-        "high_precision": 0.4619
+        "high_precision": 0.4633
       },
       "calibration_basis": "cv_proba_per_type",
-      "target_precision_4tech": 0.3206,
+      "target_precision_4tech": 0.321,
       "target_precision_2tech": 0.16
     },
     "xgb_r": {
-      "r": 0.4885,
+      "r": 0.4835,
       "p": 0.0,
-      "n": 2905,
+      "n": 2907,
       "direction_note": "P(pass)=1-P(fail), aligned with BAS r direction"
     }
   },
   "feature_importance": [
     {
       "feature": "MQ_ratio",
-      "importance": 0.1393,
+      "importance": 0.1203,
       "rank": 1
     },
     {
       "feature": "quz_pass_rate",
-      "importance": 0.1081,
+      "importance": 0.1033,
       "rank": 2
     },
     {
       "feature": "s_cluster_encoded",
-      "importance": 0.0754,
+      "importance": 0.0871,
       "rank": 3
     },
     {
       "feature": "MM_ratio",
-      "importance": 0.0484,
+      "importance": 0.0595,
       "rank": 4
     },
     {
-      "feature": "txt_completion_rate",
-      "importance": 0.0389,
+      "feature": "aud_completion_rate",
+      "importance": 0.0472,
       "rank": 5
     },
     {
-      "feature": "aud_completion_rate",
-      "importance": 0.0379,
+      "feature": "txt_completion_rate",
+      "importance": 0.0394,
       "rank": 6
     },
     {
       "feature": "late_night_ratio",
-      "importance": 0.0366,
+      "importance": 0.0363,
       "rank": 7
     },
     {
       "feature": "quz_total_attempts",
-      "importance": 0.0356,
+      "importance": 0.036,
       "rank": 8
     },
     {
-      "feature": "quz_first_attempt_accuracy",
-      "importance": 0.0343,
+      "feature": "sup_completion_rate",
+      "importance": 0.0354,
       "rank": 9
+    },
+    {
+      "feature": "consistency_score",
+      "importance": 0.035,
+      "rank": 10
     },
     {
       "feature": "quz_score_delta",
       "importance": 0.0342,
-      "rank": 10
-    },
-    {
-      "feature": "sup_completion_rate",
-      "importance": 0.0335,
       "rank": 11
     },
     {
-      "feature": "total_learning_minutes",
-      "importance": 0.0332,
+      "feature": "quz_first_attempt_accuracy",
+      "importance": 0.0331,
       "rank": 12
     },
     {
-      "feature": "active_weeks",
-      "importance": 0.033,
+      "feature": "vid_completion_rate",
+      "importance": 0.0325,
       "rank": 13
     },
     {
       "feature": "tut_total_minutes",
-      "importance": 0.0329,
+      "importance": 0.0322,
       "rank": 14
     },
     {
-      "feature": "consistency_score",
-      "importance": 0.0327,
+      "feature": "active_weeks",
+      "importance": 0.0317,
       "rank": 15
     },
     {
-      "feature": "policy_gaming_flag",
-      "importance": 0.0326,
+      "feature": "quz_cramming_ratio",
+      "importance": 0.0313,
       "rank": 16
     },
     {
-      "feature": "vid_completion_rate",
-      "importance": 0.0323,
+      "feature": "total_learning_minutes",
+      "importance": 0.0305,
       "rank": 17
     },
     {
-      "feature": "quz_final_accuracy",
-      "importance": 0.0317,
+      "feature": "reading_inflation_ratio",
+      "importance": 0.0302,
       "rank": 18
     },
     {
-      "feature": "weekly_minutes_std",
-      "importance": 0.0312,
+      "feature": "quz_final_accuracy",
+      "importance": 0.0302,
       "rank": 19
     },
     {
-      "feature": "reading_inflation_ratio",
-      "importance": 0.0305,
+      "feature": "early_start_ratio",
+      "importance": 0.0296,
       "rank": 20
     }
   ],
   "by_r_cluster": {
     "R1": {
-      "n": 1346,
-      "n_total_records": 1348,
-      "final_mean": 68.21,
-      "final_sd": 13.41,
-      "fail_rate_final": 0.2266,
-      "fail_rate_midterm": 0.3915,
-      "z_vs_overall_final": 1.306,
-      "p_chi2": 0.0824,
+      "n": 1347,
+      "n_total_records": 1349,
+      "final_mean": 68.19,
+      "final_sd": 13.42,
+      "fail_rate_final": 0.2272,
+      "fail_rate_midterm": 0.392,
+      "z_vs_overall_final": 1.34,
+      "p_chi2": 0.0745,
       "trajectory": {
-        "SS": 0.5119,
-        "FS": 0.2615,
-        "SF": 0.0966,
-        "FF": 0.13,
-        "n_with_midterm": 1346
+        "SS": 0.5115,
+        "FS": 0.2613,
+        "SF": 0.0965,
+        "FF": 0.1307,
+        "n_with_midterm": 1347
       },
       "approach": {
-        "DEEP": 0.1999,
-        "SURFACE": 0.6181,
-        "MODERATE": 0.182
+        "DEEP": 0.1997,
+        "SURFACE": 0.6184,
+        "MODERATE": 0.1819
       },
-      "rescue_rate": 0.6679,
+      "rescue_rate": 0.6667,
       "low_sample": false,
       "no_baseline": false
     },
@@ -325,8 +325,8 @@
       "final_sd": 13.25,
       "fail_rate_final": 0.6667,
       "fail_rate_midterm": 0.6667,
-      "z_vs_overall_final": 2.724,
-      "p_chi2": 0.0259,
+      "z_vs_overall_final": 2.722,
+      "p_chi2": 0.0261,
       "trajectory": {
         "SS": 0.1667,
         "FS": 0.1667,
@@ -350,8 +350,8 @@
       "final_sd": 14.23,
       "fail_rate_final": 0.211,
       "fail_rate_midterm": 0.3396,
-      "z_vs_overall_final": -0.078,
-      "p_chi2": 0.9638,
+      "z_vs_overall_final": -0.093,
+      "p_chi2": 0.9498,
       "trajectory": {
         "SS": 0.5681,
         "FS": 0.2209,
@@ -369,25 +369,25 @@
       "no_baseline": false
     },
     "R4": {
-      "n": 624,
-      "n_total_records": 625,
-      "final_mean": 71.39,
-      "final_sd": 13.09,
-      "fail_rate_final": 0.1667,
-      "fail_rate_midterm": 0.3413,
-      "z_vs_overall_final": -2.773,
-      "p_chi2": 0.0021,
+      "n": 625,
+      "n_total_records": 626,
+      "final_mean": 71.38,
+      "final_sd": 13.08,
+      "fail_rate_final": 0.1664,
+      "fail_rate_midterm": 0.3408,
+      "z_vs_overall_final": -2.803,
+      "p_chi2": 0.0019,
       "trajectory": {
-        "SS": 0.5962,
-        "FS": 0.2372,
-        "SF": 0.0625,
-        "FF": 0.1042,
-        "n_with_midterm": 624
+        "SS": 0.5968,
+        "FS": 0.2368,
+        "SF": 0.0624,
+        "FF": 0.104,
+        "n_with_midterm": 625
       },
       "approach": {
-        "DEEP": 0.1619,
-        "SURFACE": 0.625,
-        "MODERATE": 0.2131
+        "DEEP": 0.1616,
+        "SURFACE": 0.6256,
+        "MODERATE": 0.2128
       },
       "rescue_rate": 0.6948,
       "low_sample": false,
@@ -400,7 +400,7 @@
       "final_sd": 29.24,
       "fail_rate_final": 0.5789,
       "fail_rate_midterm": 0.5789,
-      "z_vs_overall_final": 3.913,
+      "z_vs_overall_final": 3.909,
       "p_chi2": 0.0003,
       "trajectory": {
         "SS": 0.2632,
@@ -421,25 +421,25 @@
   },
   "by_s_cluster": {
     "S1": {
-      "n": 54,
-      "n_total_records": 54,
-      "final_mean": 72.83,
-      "final_sd": 9.21,
-      "fail_rate_final": 0.0741,
-      "fail_rate_midterm": 0.2778,
-      "z_vs_overall_final": -2.48,
-      "p_chi2": 0.0195,
+      "n": 55,
+      "n_total_records": 55,
+      "final_mean": 72.67,
+      "final_sd": 9.2,
+      "fail_rate_final": 0.0727,
+      "fail_rate_midterm": 0.2727,
+      "z_vs_overall_final": -2.53,
+      "p_chi2": 0.0169,
       "trajectory": {
-        "SS": 0.7037,
-        "FS": 0.2222,
-        "SF": 0.0185,
-        "FF": 0.0556,
-        "n_with_midterm": 54
+        "SS": 0.7091,
+        "FS": 0.2182,
+        "SF": 0.0182,
+        "FF": 0.0545,
+        "n_with_midterm": 55
       },
       "approach": {
-        "DEEP": 0.1667,
-        "SURFACE": 0.5926,
-        "MODERATE": 0.2407
+        "DEEP": 0.1636,
+        "SURFACE": 0.6,
+        "MODERATE": 0.2364
       },
       "rescue_rate": 0.8,
       "low_sample": false,
@@ -452,7 +452,7 @@
       "final_sd": 11.69,
       "fail_rate_final": 0.1602,
       "fail_rate_midterm": 0.2744,
-      "z_vs_overall_final": -3.401,
+      "z_vs_overall_final": -3.413,
       "p_chi2": 0.0001,
       "trajectory": {
         "SS": 0.6295,
@@ -471,27 +471,27 @@
       "no_baseline": false
     },
     "S3": {
-      "n": 1553,
-      "n_total_records": 1554,
-      "final_mean": 69.4,
-      "final_sd": 12.73,
-      "fail_rate_final": 0.2009,
-      "fail_rate_midterm": 0.3876,
-      "z_vs_overall_final": -1.075,
-      "p_chi2": 0.1261,
+      "n": 1554,
+      "n_total_records": 1555,
+      "final_mean": 69.38,
+      "final_sd": 12.74,
+      "fail_rate_final": 0.2014,
+      "fail_rate_midterm": 0.388,
+      "z_vs_overall_final": -1.044,
+      "p_chi2": 0.1375,
       "trajectory": {
-        "SS": 0.5338,
-        "FS": 0.2653,
-        "SF": 0.0786,
-        "FF": 0.1223,
-        "n_with_midterm": 1553
+        "SS": 0.5335,
+        "FS": 0.2651,
+        "SF": 0.0785,
+        "FF": 0.1229,
+        "n_with_midterm": 1554
       },
       "approach": {
-        "DEEP": 0.2022,
-        "SURFACE": 0.6265,
-        "MODERATE": 0.1713
+        "DEEP": 0.2021,
+        "SURFACE": 0.6268,
+        "MODERATE": 0.1712
       },
-      "rescue_rate": 0.6844,
+      "rescue_rate": 0.6833,
       "low_sample": false,
       "no_baseline": false
     },
@@ -502,7 +502,7 @@
       "final_sd": 18.35,
       "fail_rate_final": 0.319,
       "fail_rate_midterm": 0.431,
-      "z_vs_overall_final": 6.299,
+      "z_vs_overall_final": 6.286,
       "p_chi2": 0.0,
       "trajectory": {
         "SS": 0.4569,
@@ -534,7 +534,7 @@
         "final_mean": 71.54,
         "final_sd": 6.89,
         "fail_rate_final": 0.0769,
-        "z_vs_overall_final": -1.192,
+        "z_vs_overall_final": -1.193,
         "low_sample": false
       },
       "S2": {
@@ -542,15 +542,15 @@
         "final_mean": 70.01,
         "final_sd": 11.56,
         "fail_rate_final": 0.1952,
-        "z_vs_overall_final": -0.752,
+        "z_vs_overall_final": -0.761,
         "low_sample": false
       },
       "S3": {
-        "n": 821,
-        "final_mean": 68.08,
-        "final_sd": 12.92,
-        "fail_rate_final": 0.2278,
-        "z_vs_overall_final": 1.102,
+        "n": 822,
+        "final_mean": 68.05,
+        "final_sd": 12.94,
+        "fail_rate_final": 0.2287,
+        "z_vs_overall_final": 1.154,
         "low_sample": false
       },
       "S4": {
@@ -558,7 +558,7 @@
         "final_mean": 65.25,
         "final_sd": 17.83,
         "fail_rate_final": 0.2905,
-        "z_vs_overall_final": 2.568,
+        "z_vs_overall_final": 2.561,
         "low_sample": false
       },
       "S5": {
@@ -580,7 +580,7 @@
         "final_mean": 57.6,
         "final_sd": 14.28,
         "fail_rate_final": 0.8,
-        "z_vs_overall_final": 3.216,
+        "z_vs_overall_final": 3.214,
         "low_sample": false
       },
       "S4": {
@@ -598,7 +598,7 @@
         "final_mean": 69.3,
         "final_sd": 10.88,
         "fail_rate_final": 0.2,
-        "z_vs_overall_final": -0.093,
+        "z_vs_overall_final": -0.095,
         "low_sample": false
       },
       "S2": {
@@ -606,7 +606,7 @@
         "final_mean": 70.88,
         "final_sd": 11.55,
         "fail_rate_final": 0.1311,
-        "z_vs_overall_final": -2.677,
+        "z_vs_overall_final": -2.683,
         "low_sample": false
       },
       "S3": {
@@ -614,7 +614,7 @@
         "final_mean": 70.79,
         "final_sd": 12.41,
         "fail_rate_final": 0.1709,
-        "z_vs_overall_final": -2.011,
+        "z_vs_overall_final": -2.019,
         "low_sample": false
       },
       "S4": {
@@ -622,7 +622,7 @@
         "final_mean": 65.18,
         "final_sd": 16.88,
         "fail_rate_final": 0.3072,
-        "z_vs_overall_final": 4.158,
+        "z_vs_overall_final": 4.148,
         "low_sample": false
       },
       "S5": {
@@ -632,11 +632,11 @@
     },
     "R4": {
       "S1": {
-        "n": 31,
-        "final_mean": 74.52,
-        "final_sd": 9.06,
-        "fail_rate_final": 0.0323,
-        "z_vs_overall_final": -2.449,
+        "n": 32,
+        "final_mean": 74.19,
+        "final_sd": 9.11,
+        "fail_rate_final": 0.0312,
+        "z_vs_overall_final": -2.504,
         "low_sample": false
       },
       "S2": {
@@ -644,7 +644,7 @@
         "final_mean": 73.52,
         "final_sd": 11.7,
         "fail_rate_final": 0.1294,
-        "z_vs_overall_final": -2.868,
+        "z_vs_overall_final": -2.874,
         "low_sample": false
       },
       "S3": {
@@ -652,7 +652,7 @@
         "final_mean": 71.19,
         "final_sd": 12.12,
         "fail_rate_final": 0.1611,
-        "z_vs_overall_final": -2.261,
+        "z_vs_overall_final": -2.269,
         "low_sample": false
       },
       "S4": {
@@ -660,7 +660,7 @@
         "final_mean": 64.11,
         "final_sd": 19.5,
         "fail_rate_final": 0.381,
-        "z_vs_overall_final": 3.28,
+        "z_vs_overall_final": 3.275,
         "low_sample": false
       },
       "S5": {
@@ -686,7 +686,7 @@
         "final_mean": 45.11,
         "final_sd": 29.24,
         "fail_rate_final": 0.5789,
-        "z_vs_overall_final": 3.913,
+        "z_vs_overall_final": 3.909,
         "low_sample": false
       },
       "S5": {
@@ -747,16 +747,16 @@
       }
     },
     "1112": {
-      "n": 222,
-      "fail_rate_final": 0.1982,
-      "final_mean": 68.93,
+      "n": 223,
+      "fail_rate_final": 0.2018,
+      "final_mean": 68.82,
       "n_s_cluster_unclassified": 0,
       "n_r_cluster_unclassified": 0,
       "by_r_cluster": {
         "R1": {
-          "n": 70,
-          "fail_rate_final": 0.1571,
-          "final_mean": 69.71
+          "n": 71,
+          "fail_rate_final": 0.169,
+          "final_mean": 69.35
         },
         "R3": {
           "n": 98,
@@ -775,9 +775,9 @@
       },
       "by_s_cluster": {
         "S3": {
-          "n": 112,
-          "fail_rate_final": 0.1696,
-          "final_mean": 70.18
+          "n": 113,
+          "fail_rate_final": 0.177,
+          "final_mean": 69.95
         },
         "S2": {
           "n": 60,
@@ -1043,9 +1043,9 @@
       }
     },
     "1142": {
-      "n": 248,
-      "fail_rate_final": 0.4919,
-      "final_mean": 59.23,
+      "n": 249,
+      "fail_rate_final": 0.49,
+      "final_mean": 59.25,
       "n_s_cluster_unclassified": 0,
       "n_r_cluster_unclassified": 0,
       "by_r_cluster": {
@@ -1060,9 +1060,9 @@
           "final_mean": 60.61
         },
         "R4": {
-          "n": 39,
-          "fail_rate_final": 0.359,
-          "final_mean": 61.38
+          "n": 40,
+          "fail_rate_final": 0.35,
+          "final_mean": 61.45
         },
         "R2": {
           "n": 6,
@@ -1091,9 +1091,9 @@
           "final_mean": 52.36
         },
         "S1": {
-          "n": 6,
-          "fail_rate_final": 0.1667,
-          "final_mean": 62.33
+          "n": 7,
+          "fail_rate_final": 0.1429,
+          "final_mean": 62.57
         }
       }
     }
@@ -2569,6 +2569,10 @@
     },
     "20d87e73||1141": {
       "trajectory": "FF",
+      "learning_approach": "SURFACE"
+    },
+    "21517b76||1142": {
+      "trajectory": "SS",
       "learning_approach": "SURFACE"
     },
     "2154d191||1111": {
@@ -10409,6 +10413,10 @@
     },
     "cd41a14a||1111": {
       "trajectory": "SS",
+      "learning_approach": "SURFACE"
+    },
+    "cd486cf0||1112": {
+      "trajectory": "FF",
       "learning_approach": "SURFACE"
     },
     "cd4f4b27||1131": {
