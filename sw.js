@@ -30,7 +30,7 @@ const DATA_CACHE_PREFIX = 'la-dash-v11-docs-cachefix-data';
 // Keep this value identical to index.html's ?v= values and
 // js/behavior-loader.js DATA_VERSION.  update-dashboard-after-etl.ps1
 // updates all three as one deployment transaction.
-const BUILD_VERSION = '202607301444';
+const BUILD_VERSION = '202608031108';
 
 const CACHE_VERSION = `${CACHE_PREFIX}-${BUILD_VERSION}`;
 const DATA_CACHE = `${DATA_CACHE_PREFIX}-${BUILD_VERSION}`;
@@ -48,21 +48,21 @@ const APP_SHELL = [
   './js/vendor/chart.umd.min.js',
   './js/vendor/chartjs-plugin-annotation.min.js',
   './js/frame-guard.js',
-  './js/filter-engine.js?v=202607301444',
-  './js/main.js?v=202607301444',
+  './js/filter-engine.js?v=202608031108',
+  './js/main.js?v=202608031108',
   './js/vendor/d3.min.js',
-  './js/chart-registry.js?v=202607301444',
-  './js/help-modal.js?v=202607301444',
-  './js/behavior-loader.js?v=202607301444',
-  './js/tab-behavior-radar.js?v=202607301444',
-  './js/tab-behavior-correlation.js?v=202607301444',
-  './js/tab-behavior-time.js?v=202607301444',
-  './js/tab-behavior-lsa.js?v=202607301444',
-  './js/tab-behavior-cross.js?v=202607301444',
-  './js/tab-behavior-warning.js?v=202607301444',
-  './js/behavior-init.js?v=202607301444',
-  './js/at-risk-report.js?v=202607301444',
-  './js/print-panel.js?v=202607301444',
+  './js/chart-registry.js?v=202608031108',
+  './js/help-modal.js?v=202608031108',
+  './js/behavior-loader.js?v=202608031108',
+  './js/tab-behavior-radar.js?v=202608031108',
+  './js/tab-behavior-correlation.js?v=202608031108',
+  './js/tab-behavior-time.js?v=202608031108',
+  './js/tab-behavior-lsa.js?v=202608031108',
+  './js/tab-behavior-cross.js?v=202608031108',
+  './js/tab-behavior-warning.js?v=202608031108',
+  './js/behavior-init.js?v=202608031108',
+  './js/at-risk-report.js?v=202608031108',
+  './js/print-panel.js?v=202608031108',
 ];
 
 self.addEventListener('install', (event) => {
@@ -85,7 +85,7 @@ self.addEventListener('activate', (event) => {
           .filter((key) => key.startsWith(CACHE_PREFIX) || key.startsWith(DATA_CACHE_PREFIX))
           .filter((key) => key !== CACHE_VERSION && key !== DATA_CACHE)
           .map((key) => {
-            console.log('[SW] Deleting old cache:', key);
+            console.debug('[SW] Deleting old cache:', key);
             return caches.delete(key);
           })
       ))
@@ -179,7 +179,7 @@ async function networkFirstData(request) {
   } catch {
     const cached = await caches.match(request, { cacheName: DATA_CACHE });
     if (cached) {
-      console.log('[SW] Offline: serving cached data:', request.url);
+      console.debug('[SW] Offline: serving cached data:', request.url);
       return cached;
     }
 

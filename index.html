@@ -2047,7 +2047,10 @@ body.light .behavior-range-badge {
       <div id="behaviorMetaStrip" style="display:none;margin:0 0 14px"></div>
 
       <!-- 子 Tab -->
-      <div style="display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap" id="behaviorSubTabs">
+      <!-- UI-HSCROLL-1 FIX(0730)：PWA窄螢幕下6顆膠囊按鈕原以flex-wrap:wrap
+           排成多列、佔用大量垂直空間。改為單列＋橫向捲動（.ladash-hscroll-row，
+           定義於behavior-init.js全域工具樣式，隱藏捲軸、保留觸控拖曳）。 -->
+      <div class="ladash-hscroll-row" style="display:flex;gap:6px;margin-bottom:16px" id="behaviorSubTabs">
         <button type="button" class="behavior-sub-btn is-active" data-sub="radar"
                 data-action="behaviorSwitchSub"
                 style="padding:5px 14px;border-radius:20px;border:1px solid var(--accent,#3498db);
@@ -2643,7 +2646,10 @@ body.light .behavior-range-badge {
          padding:10px 14px;background:var(--card-bg,#fff);border:1px solid var(--border,#e0e0e0);
          border-radius:10px;margin-bottom:12px;flex-wrap:wrap">
       <span style="font-size:11px;font-weight:600;color:var(--text-dim,#888);white-space:nowrap">學期</span>
-      <div id="rSemesterBtns" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+      <!-- UI-HSCROLL-1 FIX(0730)：同behaviorSubTabs，8+1顆學期膠囊按鈕改為
+           單列橫向捲動；flex:1/min-width:0讓此列可在父層flex中正確收縮，
+           使overflow-x:auto生效（否則flex子項預設min-width:auto無法觸發捲動）。 -->
+      <div id="rSemesterBtns" class="ladash-hscroll-row" style="display:flex;gap:6px;flex:1;min-width:0"></div>
     </div>
 
     <!-- §5.2 班級概況卡片 -->
@@ -2738,29 +2744,29 @@ body.light .behavior-range-badge {
 </div>
 
 <!-- 核心篩選邏輯模組（Bug E fix: moved from <head> to guarantee defer order） -->
-<script defer src="js/filter-engine.js?v=202607301444"></script>
+<script defer src="js/filter-engine.js?v=202608031108"></script>
 <!-- 主應用邏輯（依賴 filter-engine.js 與 CDN Chart.js） -->
-<script defer src="js/main.js?v=202607301444"></script>
+<script defer src="js/main.js?v=202608031108"></script>
 
 <!-- ══ D3.js v7.9.0（LSA 有向圖，本地化：js/vendor/d3.min.js）══ -->
 <script src="js/vendor/d3.min.js"></script>
 
 <!-- ══ 學習行為模組（依賴 main.js 全域變數）══ -->
-<script defer src="js/chart-registry.js?v=202607301444"></script>
-<script defer src="js/help-modal.js?v=202607301444"></script>
-<script defer src="js/behavior-loader.js?v=202607301444"></script>
-<script defer src="js/tab-behavior-radar.js?v=202607301444"></script>
-<script defer src="js/tab-behavior-correlation.js?v=202607301444"></script>
-<script defer src="js/tab-behavior-time.js?v=202607301444"></script>
-<script defer src="js/tab-behavior-lsa.js?v=202607301444"></script>
-<script defer src="js/tab-behavior-cross.js?v=202607301444"></script>
-<script defer src="js/tab-behavior-warning.js?v=202607301444"></script>
+<script defer src="js/chart-registry.js?v=202608031108"></script>
+<script defer src="js/help-modal.js?v=202608031108"></script>
+<script defer src="js/behavior-loader.js?v=202608031108"></script>
+<script defer src="js/tab-behavior-radar.js?v=202608031108"></script>
+<script defer src="js/tab-behavior-correlation.js?v=202608031108"></script>
+<script defer src="js/tab-behavior-time.js?v=202608031108"></script>
+<script defer src="js/tab-behavior-lsa.js?v=202608031108"></script>
+<script defer src="js/tab-behavior-cross.js?v=202608031108"></script>
+<script defer src="js/tab-behavior-warning.js?v=202608031108"></script>
 
 <!-- ══ 行為初始化 + 高風險報告（依賴 behavior 模組）══ -->
-<script defer src="js/behavior-init.js?v=202607301444"></script>
-<script defer src="js/at-risk-report.js?v=202607301444"></script>
+<script defer src="js/behavior-init.js?v=202608031108"></script>
+<script defer src="js/at-risk-report.js?v=202608031108"></script>
 <!-- ══ 列印面板（依賴所有 behavior 模組與 ChartRegistry）══ -->
-<script defer src="js/print-panel.js?v=202607301444"></script>
+<script defer src="js/print-panel.js?v=202608031108"></script>
 
 
 </body>
