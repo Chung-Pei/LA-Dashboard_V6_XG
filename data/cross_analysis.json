@@ -1,6 +1,6 @@
 {
   "meta": {
-    "schema_version": "1.3",
+    "schema_version": "1.4",
     "edu_type": "theory",
     "practicum_excluded": true,
     "incomplete_semesters_excluded": [],
@@ -20,7 +20,7 @@
     ],
     "pass_threshold": 60,
     "training_semester_range": "111(1)-114(2)",
-    "generated_at": "2026-08-03T11:06:50"
+    "generated_at": "2026-08-04T11:25:19"
   },
   "overall": {
     "n": 2907,
