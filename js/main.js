@@ -627,8 +627,13 @@ function _classInfoCompute(sheetName, semester = '') {
     return { canonical: '重修生', program: 'retake_student', order: 0 };
   }
   if (/重修|暑期|學分|補修|微免|遠距|R\d/i.test(raw) || /R\d/i.test(code)) {
-    const canonical = /(?:護|N|日)?[24]\d/.test(code) ? code.replace(/^日/, '護').replace(/^N/, '護') : raw;
-    return { canonical, program: 'retake_class', order: 5000 };
+    // BUG-FIX（跨屆比較熱力圖 問題II，0805）：原本依 code 是否命中 [24]\d
+    // 決定 canonical 為「班級代碼」或「原始 raw 文字」，導致同屬重修班的
+    // 「暑期學分」「微免補修(410986)」「護22R0遠距」三種原始分頁名稱
+    // 各自產生不同 canonical，熱力圖出現 3 個重修班列。重修班本就無固定
+    // 班級代碼可言，比照下方「重修生」單列統一寫法，一律回傳固定標籤，
+    // 與 PROGRAM_LABELS.retake_class（'重修班'）一致。
+    return { canonical: '重修班', program: 'retake_class', order: 5000 };
   }
   if (/學後護|學士後|學後/.test(raw)) {
     return { canonical: '學士後護', program: 'post', order: 0 };
@@ -666,6 +671,35 @@ function _classInfoCompute(sheetName, semester = '') {
     };
   }
 
+  // BUG-FIX（跨屆比較熱力圖 問題I，0805）：健四二F（國際護理管理學士班，
+  // 特殊任務班級，非護理系班級）原始 Excel 分頁名稱於不同學期夾帶不一致
+  // 的課程代碼括號後綴（如 100(1) 學期的"(423429)"）或前後空白／不斷行空格，
+  // cleanSheetName 只清空白不清括號後綴，導致「健四二F」與「健四二F(423429)」
+  // 被當成 2 個不同 canonical，熱力圖出現重複列。此處去除結尾括號後綴／
+  // 正課／實驗課字樣（比照本函式上方 2yr/4yr 班級「code 部分比對、忽略結尾
+  // 文字」的既有作法），使各學期一律合併為同一 canonical「健四二F」單列。
+  //
+  // BUG-FIX（護理系統計污染修正，0805第三次）：先前 program 仍落入下方
+  // 通用 fallback、依學期尾數猜成 2yr_gen/4yr，導致該班成績在 Panel D
+  // 學制篩選＝「全部」時被算進「護理系」的加權平均分／及格率／人數／
+  // 學制數／盒鬚圖／人數vs及格率回歸散點等統計聚合（選特定護理系學制
+  // 時不受影響，因為 program 比對本就不會命中）。使用者確認：該班成績
+  // 僅作為歷史紀錄保留（熱力圖／班級明細表／各班獨立趨勢線仍應顯示），
+  // 但不應列入任何「護理系」統計聚合。故獨立給予專屬 program
+  // 'non_nursing'，且刻意不加入 PROGRAM_ORDER，使絕大多數以 PROGRAM_ORDER
+  // 或 filterProg 比對的統計聚合自然排除它（programOrderIndex() 對不在
+  // PROGRAM_ORDER 內的值已有防禦性 fallback＝99，排序上也會自然排到最後）。
+  // 仍有4處未經過 PROGRAM_ORDER 比對、需個別加註排除，見各自修改處：
+  // renderD() 的 dStats 加權平均迴圈與「學制數」卡片、renderDTrendMerge()
+  // 「全部學制」分支、renderCorrelation() 人數vs及格率散點。
+  if (/^健[〇零一二兩三四五六七八九ㄧ\d]/.test(raw)) {
+    return {
+      canonical: raw.replace(/[（(][^）)]*[）)]$/, '').replace(/(正課|實驗課|實驗)$/, ''),
+      program: 'non_nursing',
+      order: 9500
+    };
+  }
+
   const semType = semester ? String(semester).slice(-1) : '';
   return {
     canonical: raw,
@@ -692,8 +726,14 @@ function getBaseProgram(sheetName) {
   m = code.match(/(?:護|N)?4([1-9])([A-D])/i);
   if (m) return '4yr';
 
-  if (/(?:護|日|N)?2[1-9]/.test(code) || /二[一-九]/.test(raw)) return '2yr_gen';
-  if (/(?:護|日|N)?4[1-9]/.test(code) || /四[一-九]/.test(raw)) return '4yr';
+  // BUG-FIX（[一-九] Unicode range 誤用修正，0807）：一(4E00)~九(4E5D)依
+  // Unicode code point排序僅含一/三/七/九，不含二四五六八（非依語意順序）。
+  // 此2行為 code（阿拉伯數字版）比對失敗後的 raw 中文數字備援，實務上
+  // dead-in-practice（classCodeText 已將所有中文數字正確轉換，code比對
+  // 必定先成功），但仍改用明確列舉 [一二三四五六七八九] 徹底修正，避免
+  // 日後邏輯調整使此分支變為必經路徑時，殘留 Unicode range 誤用的地雷。
+  if (/(?:護|日|N)?2[1-9]/.test(code) || /二[一二三四五六七八九]/.test(raw)) return '2yr_gen';
+  if (/(?:護|日|N)?4[1-9]/.test(code) || /四[一二三四五六七八九]/.test(raw)) return '4yr';
 
   return 'unknown';
 }
@@ -703,6 +743,9 @@ function normalizeSheet(s) {
 }
 
 const PROGRAM_ORDER = ['2yr_gen','2yr_work','2yr_night','4yr','post','retake_class','retake_student'];
+// 'non_nursing'（健四二F等非護理系班級）刻意不列入 PROGRAM_ORDER：
+// 所有以 PROGRAM_ORDER 或 filterProg 做統計聚合的圖表/卡片會自然排除它，
+// 只保留在 canonical 層級（熱力圖／班級明細表／各班獨立趨勢線）作歷史紀錄。
 const PROGRAM_LABELS = {
   '2yr_gen':        '二技一般',
   '2yr_work':       '二技在職',
@@ -711,6 +754,7 @@ const PROGRAM_LABELS = {
   'post':           '學士後護',
   'retake_class':   '重修班',
   'retake_student': '重修生',
+  'non_nursing':    '非護理系（歷史紀錄）',
 };
 const PROGRAM_COLORS = {
   '2yr_gen':        '#4f8ef7',
@@ -720,6 +764,7 @@ const PROGRAM_COLORS = {
   'post':           '#be78f0',
   'retake_class':   '#f0c85b',
   'retake_student': '#a0b0c0',
+  'non_nursing':    '#7a7a7a',
 };
 
 /**
@@ -3310,7 +3355,12 @@ function renderBoxPlot(allClasses, filterProg) {
 let _corrShowAllReg = false;
 
 function renderCorrelation(filtered) {
-  const pts = filtered.filter(c => c.count && c.pass_rate != null).map(c => ({
+  // BUG-FIX（護理系統計污染修正，0805第三次）：filtered 於 Panel D
+  // 學制篩選＝「全部」時含 program==='non_nursing'（健四二F，4-10人/
+  // 學期的歷史紀錄班級）。此圖為「人數 vs 及格率」護理系規模分析散點，
+  // 混入非護理系小班級的點位會誤導判讀，且該 program 未定義於
+  // PROGRAM_COLORS 專用聚合色階（僅有中性灰用於明細表徽章），排除之。
+  const pts = filtered.filter(c => c.count && c.pass_rate != null && c.program !== 'non_nursing').map(c => ({
     x: c.count, y: +(c.pass_rate * 100).toFixed(1),
     prog: c.program, sem: c.semester, cls: c.sheet_name
   }));
@@ -4183,6 +4233,12 @@ function renderD() {
   let totalStudents = 0;
   const _failField = inclRetakerD ? 'fail_rate' : 'fail_rate_nr';
   filtered.forEach(c => {
+    // BUG-FIX（護理系統計污染修正，0805第三次）：filterProg==='all' 時
+    // filtered===allClasses，含 program==='non_nursing'（健四二F等歷史
+    // 紀錄班級）。該班不屬護理系，此處為「護理系」加權統計卡片（總人數／
+    // 均分／及格率等），故排除；選特定護理系學制時 c.program 本就不會
+    // 等於 'non_nursing'，此判斷不影響該情境。
+    if (c.program === 'non_nursing') return;
     const cnt = Number(c[_cntField]) || 0;
     totalStudents += cnt;
     if (c[_avgField]  != null) { _wScore  += c[_avgField]  * cnt; _wScoreW  += cnt; }
@@ -4207,8 +4263,10 @@ function renderD() {
   // 不應該用列上原始的 c.program（可能是 'retake_class'）去重計數，
   // 否則會把「同一學制底下的重修班」誤算成第二個學制。
   // 只有 filterProg === 'all' 時才需要對照全部列的真實 program 分佈。
+  // BUG-FIX（護理系統計污染修正，0805第三次）：'non_nursing' 排除，
+  // 否則「全部」檢視下健四二F會被當成第5個「學制」納入計數卡片。
   const programs = filterProg === 'all'
-    ? [...new Set(filtered.map(c => c.program))]
+    ? [...new Set(filtered.map(c => c.program))].filter(p => p !== 'non_nursing')
     : (filtered.length > 0 ? [filterProg] : []);
 
   document.getElementById('dStats').innerHTML = `
@@ -4314,7 +4372,12 @@ function renderDTrendMerge(filtered, sems, allClasses) {
 
   let datasets;
   if (filterProg === 'all') {
-    const programs = sortPrograms([...new Set(allClasses.map(c => c.program))]);
+    // BUG-FIX（護理系統計污染修正，0805第三次）：allClasses 含
+    // program==='non_nursing'（健四二F），排除，否則跨學制趨勢比較圖
+    // 會多出一條「非護理系」線，且該線僅4-10人/學期，波動極大易誤讀。
+    const programs = sortPrograms(
+      [...new Set(allClasses.map(c => c.program))].filter(p => PROGRAM_ORDER.includes(p))
+    );
     datasets = programs.map(prog => {
       const data = sems.map(sem => {
         const cls = allClasses.filter(c => c.semester === sem && c.program === prog);

@@ -56,8 +56,6 @@ const FilterEngine = (() => {
     '護21C':   '2yr_gen',
     '護21D':   '2yr_gen',
     '護21E':   '2yr_gen',
-    '護21戊':  '2yr_gen',
-    '護21己':  '2yr_gen',
     '護二一A': '2yr_gen',
     '護二一B': '2yr_gen',
     '護二一C': '2yr_gen',
@@ -71,22 +69,30 @@ const FilterEngine = (() => {
     // ── 二技在職 ──────────────────────────────────────────
     '護21甲':   '2yr_work',
     '護21乙':   '2yr_work',
+    // BUG-FIX（/systematic-debugging 穿透式審查，0805）：護21戊／護21己
+    // 原本誤植於「二技一般」區塊、值為 2yr_gen，與 main.js 的
+    // CLASS_WORK_ORDER=['甲','乙','戊','己']、本檔§ PROGRAM_THEORY_CLASSES.
+    // 2yr_work（下方已含'護二一戊','護二一己'）、以及 ETL _classify_program()
+    // 的 _CLASS_WORK_SET=set("甲乙戊己") 三方權威來源互相矛盾。經比對確認
+    // 戊己應歸屬二技「在職」，非二技「一般」，實際影響 113(1)/114(1) 真實
+    // 在學班級的分類。
+    '護21戊':  '2yr_work',
+    '護21己':  '2yr_work',
     '日21甲':   '2yr_work',
     '日21乙':   '2yr_work',
     '日二一甲': '2yr_work',
     '日二一乙': '2yr_work',
     // ── 四技一般 ──────────────────────────────────────────
+    // BUG-FIX（0805）：原本另列「護四一A 正課」等4組帶中間空格的重複
+    // key（註記「歷史資料帶空格變體」）；_normalizeSheetName() 已改為
+    // 清除全字串空白（見上方），輸入到此已不含空格，故不需要重複列舉。
     '護四一A正課':   '4yr',
-    '護四一A 正課':  '4yr',   // 歷史資料帶空格變體
     '護四一A實驗':   '4yr',
     '護四一B正課':   '4yr',
-    '護四一B 正課':  '4yr',
     '護四一B實驗':   '4yr',
     '護四一C正課':   '4yr',
-    '護四一C 正課':  '4yr',   // 歷史資料帶空格變體
     '護四一C實驗':   '4yr',
     '護四一D正課':   '4yr',
-    '護四一D 正課':  '4yr',
     '護四一D實驗':   '4yr',
     // ── 學士後護 ──────────────────────────────────────────
     '學後護41正課': 'post',
@@ -147,15 +153,25 @@ const FilterEngine = (() => {
   // ════════════════════════════════════════════════════════
 
   /**
-   * 全形英文字母 → 半形（處理歷史資料如「護二一Ａ」→「護二一A」）
-   * 並去除前後空格
+   * BUG-FIX（/systematic-debugging 穿透式審查，0805）：原本只 trim() 頭尾空白，
+   * 字串「中間」出現空白／不斷行空格／零寬字元等（如「護四一C 正課」）完全不會
+   * 被清除，只能靠 SHEET_PROGRAM_MAP 逐一列舉「帶空格變體」死記；任何未列舉到
+   * 的新變體查表落空後，若又不幸插在 pattern fallback 命中的關鍵字元之間，會
+   * 直接回傳 null（該班級整個從篩選器消失）。模糊測試對 285 筆真實班級 × 6種
+   * 空白/不可見字元 × 逐字元插入位置，共驗出 324 處不穩定案例，均屬此因。
+   * 比照 main.js cleanSheetName() 的作法：NFKC 正規化＋全字串空白/不可見字元
+   * 一律移除（非僅頭尾 trim），一次徹底解決，不必窮舉空格變體。
+   * NFKC 正規化本身已含全形→半形字母轉換（Ａ→A），故移除下方原本重複的
+   * 全形字母 regex（比照 classCodeText() 移除重複 cleanSheetName 呼叫的
+   * PERF FIX 先例）。
    */
   function _normalizeSheetName(raw) {
     if (!raw) return '';
+    raw = String(raw);
+    if (raw.normalize) raw = raw.normalize('NFKC');
     return raw
-      .trim()
-      .replace(/[\uFF21-\uFF3A]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0))  // Ａ-Ｚ → A-Z
-      .replace(/[\uFF41-\uFF5A]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0)); // ａ-ｚ → a-z
+      .replace(/[\u00AD\u200B-\u200F\u202A-\u202E\u2060\uFE00-\uFE0F\uFEFF]/g, '')
+      .replace(/[\s\u00A0\u1680\u180E\u2000-\u200A\u2028\u2029\u202F\u205F\u3000]+/g, '');
   }
 
   /**
@@ -182,16 +198,26 @@ const FilterEngine = (() => {
     // 學士後護
     if (/學後護|學士後|學後/.test(stripped)) return 'post';
     // 二技系列（護21X / 護二一X / 日21X 等各種書寫）
-    if (/(?:護|日|N)?2[1-9][甲乙]/.test(stripped)) return '2yr_work';
+    // BUG-FIX（0805）：戊己原本併入 2yr_gen 判斷式（[戊己A-Ea-e]），與
+    // PROGRAM_THEORY_CLASSES.2yr_work、main.js CLASS_WORK_ORDER、ETL
+    // _CLASS_WORK_SET 三方權威來源矛盾，改為併入 2yr_work（同甲乙）。
+    // BUG-FIX（[一-九] Unicode range 誤用修正，0807）：一(4E00)~九(4E5D)
+    // 依Unicode code point排序僅含一/三/七/九，不含二四五六八。此檔無
+    // 阿拉伯數字轉換步驟，中文數字班級名稱（護二一X等）全靠這幾行比對，
+    // 屬真正會被執行到的路徑（非main.js那種備援死路徑）——過去未出包
+    // 純粹因為真實班級第二個數字恆為「一」（護二一/護四一，剛好落在
+    // range內），改用明確列舉 [一二三四五六七八九] 徹底修正，避免日後
+    // 若出現「護二二X」「護四二X」等命名被誤判。
+    if (/(?:護|日|N)?2[1-9][甲乙戊己]/.test(stripped)) return '2yr_work';
     if (/(?:護|日|N)?2[1-9][丙丁]/.test(stripped)) return '2yr_night';
-    if (/(?:護|日|N)?2[1-9][戊己A-Ea-e]/.test(stripped)) return '2yr_gen';
-    if (/(?:護|日|N)?二[一-九][甲乙]/.test(stripped)) return '2yr_work';
-    if (/(?:護|日|N)?二[一-九][丙丁]/.test(stripped)) return '2yr_night';
-    if (/(?:護|日|N)?二[一-九][戊己A-Ea-e]/.test(stripped)) return '2yr_gen';
+    if (/(?:護|日|N)?2[1-9][A-Ea-e]/.test(stripped)) return '2yr_gen';
+    if (/(?:護|日|N)?二[一二三四五六七八九][甲乙戊己]/.test(stripped)) return '2yr_work';
+    if (/(?:護|日|N)?二[一二三四五六七八九][丙丁]/.test(stripped)) return '2yr_night';
+    if (/(?:護|日|N)?二[一二三四五六七八九][A-Ea-e]/.test(stripped)) return '2yr_gen';
     // 四技一般（護4xX / 護四xX）
     if (/(?:護|日|N)?4[1-9][A-Da-d]/.test(stripped)) return '4yr';
-    if (/(?:護|日|N)?四[一-九][A-Da-d甲乙丙丁]/.test(stripped)) return '4yr';
-    if (/^護四[一-九]/.test(stripped)) return '4yr';
+    if (/(?:護|日|N)?四[一二三四五六七八九][A-Da-d甲乙丙丁]/.test(stripped)) return '4yr';
+    if (/^護四[一二三四五六七八九]/.test(stripped)) return '4yr';
     // 廣義 fallback
     if (/^(護|日)?\d*二一/.test(stripped)) return '2yr_gen';
     return null;
