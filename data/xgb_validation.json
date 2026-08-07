@@ -1,10 +1,10 @@
 {
   "week_limit": 12,
-  "auc": 0.7827,
-  "precision": 0.5278,
-  "recall": 0.3533,
-  "f1": 0.4233,
-  "accuracy": 0.7957,
+  "auc": 0.7801,
+  "precision": 0.5471,
+  "recall": 0.3502,
+  "f1": 0.427,
+  "accuracy": 0.8011,
   "feature_version": "v4",
   "model_version": "xgb_v3",
   "training_semesters": [
@@ -32,29 +32,29 @@
     "4tech": {
       "high": 0.3,
       "medium": 0.3,
-      "high_precision": 0.5108,
-      "n": 944
+      "high_precision": 0.5149,
+      "n": 940
     },
     "2tech": {
       "high": 0.31,
       "medium": 0.3,
-      "high_precision": 0.4063,
-      "n": 1963
+      "high_precision": 0.4072,
+      "n": 1961
     },
     "combined": {
       "high": 0.3,
       "medium": 0.3,
-      "high_precision": 0.4633
+      "high_precision": 0.466
     },
     "calibration_basis": "cv_proba_per_type",
-    "target_precision_4tech": 0.321,
-    "target_precision_2tech": 0.16
+    "target_precision_4tech": 0.3213,
+    "target_precision_2tech": 0.1591
   },
   "xgb_r": {
-    "r": 0.4835,
+    "r": 0.4921,
     "p": 0.0,
-    "n": 2907,
+    "n": 2901,
     "direction_note": "P(pass)=1-P(fail), aligned with BAS r direction"
   },
-  "generated_at": "2026-08-04T11:25:19"
+  "generated_at": "2026-08-07T19:10:56"
 }
