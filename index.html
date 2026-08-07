@@ -1104,6 +1104,10 @@ body.light .behavior-range-badge {
 .prog-post         { background: rgba(190,120,240,0.15); color: #be78f0; }
 .prog-retake-class  { background: rgba(240,200,91,0.15); color: #f0c85b; }
 .prog-retake-student{ background: rgba(160,176,192,0.15); color: #a0b0c0; }
+/* BUG-FIX（護理系統計污染修正，0805第三次）：健四二F等 program='non_nursing'
+   班級僅存於班級明細表作歷史紀錄（不進入任何統計聚合），配色比照既有
+   徽章慣例補上，避免落回無底色的預設樣式。 */
+.prog-non-nursing   { background: rgba(122,122,122,0.15); color: #7a7a7a; }
 
 /* ── 頁籤 D 整屆圖表 ── */
 #panelD .view-toggle {
@@ -2744,29 +2748,29 @@ body.light .behavior-range-badge {
 </div>
 
 <!-- 核心篩選邏輯模組（Bug E fix: moved from <head> to guarantee defer order） -->
-<script defer src="js/filter-engine.js?v=202608042052"></script>
+<script defer src="js/filter-engine.js?v=202608071912"></script>
 <!-- 主應用邏輯（依賴 filter-engine.js 與 CDN Chart.js） -->
-<script defer src="js/main.js?v=202608042052"></script>
+<script defer src="js/main.js?v=202608071912"></script>
 
 <!-- ══ D3.js v7.9.0（LSA 有向圖，本地化：js/vendor/d3.min.js）══ -->
 <script src="js/vendor/d3.min.js"></script>
 
 <!-- ══ 學習行為模組（依賴 main.js 全域變數）══ -->
-<script defer src="js/chart-registry.js?v=202608042052"></script>
-<script defer src="js/help-modal.js?v=202608042052"></script>
-<script defer src="js/behavior-loader.js?v=202608042052"></script>
-<script defer src="js/tab-behavior-radar.js?v=202608042052"></script>
-<script defer src="js/tab-behavior-correlation.js?v=202608042052"></script>
-<script defer src="js/tab-behavior-time.js?v=202608042052"></script>
-<script defer src="js/tab-behavior-lsa.js?v=202608042052"></script>
-<script defer src="js/tab-behavior-cross.js?v=202608042052"></script>
-<script defer src="js/tab-behavior-warning.js?v=202608042052"></script>
+<script defer src="js/chart-registry.js?v=202608071912"></script>
+<script defer src="js/help-modal.js?v=202608071912"></script>
+<script defer src="js/behavior-loader.js?v=202608071912"></script>
+<script defer src="js/tab-behavior-radar.js?v=202608071912"></script>
+<script defer src="js/tab-behavior-correlation.js?v=202608071912"></script>
+<script defer src="js/tab-behavior-time.js?v=202608071912"></script>
+<script defer src="js/tab-behavior-lsa.js?v=202608071912"></script>
+<script defer src="js/tab-behavior-cross.js?v=202608071912"></script>
+<script defer src="js/tab-behavior-warning.js?v=202608071912"></script>
 
 <!-- ══ 行為初始化 + 高風險報告（依賴 behavior 模組）══ -->
-<script defer src="js/behavior-init.js?v=202608042052"></script>
-<script defer src="js/at-risk-report.js?v=202608042052"></script>
+<script defer src="js/behavior-init.js?v=202608071912"></script>
+<script defer src="js/at-risk-report.js?v=202608071912"></script>
 <!-- ══ 列印面板（依賴所有 behavior 模組與 ChartRegistry）══ -->
-<script defer src="js/print-panel.js?v=202608042052"></script>
+<script defer src="js/print-panel.js?v=202608071912"></script>
 
 
 </body>
