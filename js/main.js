@@ -3986,6 +3986,17 @@ function setDSemMode(mode, skipRender) {
   document.getElementById('dSemMultiWrap').style.setProperty('display', mode === 'multi' ? 'flex' : 'none');
   document.getElementById('dSemMultiCount').style.setProperty('display', mode === 'multi' ? 'inline' : 'none');
 
+  // UI-COMPACT-D FIX(0808b)：清除條件按鈕跟著目前可見的容器搬移，讓它隨該
+  // 容器既有的 flex-wrap 排列在同一行的剩餘空間，避免獨立於 filter-pair 外層
+  // 而在 PWA 窄螢幕（flex-direction:column）下獨佔一整列。注意：initDSemFilter()
+  // 只在 mode==='range' 時的呼叫路徑才會執行（見該函式），故不會有按鈕被
+  // dSemMultiWrap.innerHTML 重建清空的風險。
+  const dResetBtn = document.getElementById('dResetBtn');
+  if (dResetBtn) {
+    const dResetTarget = document.getElementById(mode === 'multi' ? 'dSemMultiWrap' : 'dSemRangeWrap');
+    dResetTarget.appendChild(dResetBtn);
+  }
+
   if (mode === 'multi' && dSemSelected.size === 0 && DATA) {
     const sems = getDComparableSemesters();
     sems.slice(-3).forEach(s => dSemSelected.add(s));
