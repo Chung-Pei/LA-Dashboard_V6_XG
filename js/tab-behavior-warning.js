@@ -36,7 +36,7 @@ const BehaviorWarningTab = (() => {
     .warning-stat-label{font-size:.75rem;font-weight:600;margin-bottom:4px}
     .warning-stat-value{font-size:1.15rem;font-weight:700;color:var(--text,#eee)}
     .warning-stat-sub{font-size:.68rem;color:var(--text-dim,#888);margin-top:2px}
-    .warning-filter-btn{padding:4px 12px;border-radius:16px;cursor:pointer;font-size:.78rem;margin-right:6px;margin-bottom:6px}
+    .warning-filter-btn{padding:4px 12px;border-radius:16px;cursor:pointer;font-size:.78rem;flex-shrink:0;white-space:nowrap}
     .warning-table{width:100%;border-collapse:collapse;font-size:.76rem}
     .warning-table th{text-align:left;padding:6px 8px;border-bottom:2px solid var(--border2,#2a2f45);color:var(--text-dim,#888);font-weight:600;white-space:nowrap}
     .warning-table td{padding:5px 8px;border-bottom:1px solid var(--border2,#2a2f45);white-space:nowrap}

@@ -3792,6 +3792,36 @@ function metricField(m) {
   return { semester_score:'avg_semester', midterm:'avg_midterm', final:'avg_final' }[m] || m;
 }
 
+// UI-RESET-D FIX(0808)：跨屆比較分頁「清除條件」按鈕（dResetBtn）。
+// 比照 resetAFilters()／resetCFilters() 慣例：直接重置各篩選 DOM/狀態變數為
+// 預設值後呼叫 renderD()，不做 undo 快照（Panel A 才有的 aResetHint/復原
+// 屬於該分頁既有的加強功能，其餘分頁的清除條件按鈕均無此設計，維持一致）。
+function resetDFilters() {
+  // 學期雙模選擇器：清空多選膠囊、切回預設「範圍」模式、重建為全範圍
+  dSemSelected.clear();
+  setDSemMode('range', true);
+  initDSemFilter();
+  _syncCapsuleStyles();
+  _updateMultiCount();
+
+  // 其餘篩選條件重置為預設值
+  document.getElementById('dFilterProgram').value = 'all';
+  setDType('theory', true);
+  setDView('merge', true);
+  setDMetric('semester_score', true);
+
+  if (typeof _retakerState !== 'undefined') {
+    _retakerState['D'] = true;
+    if (typeof _syncRetakerBtn === 'function') _syncRetakerBtn('D');
+  }
+  if (typeof _filterCollapsed !== 'undefined' && _filterCollapsed['D']) {
+    _filterCollapsed['D'] = false;
+    if (typeof _applyFilterCollapse === 'function') _applyFilterCollapse('D');
+  }
+
+  renderD();
+}
+
 // ══════════════════════════════════════════════════════════
 // PHASE 6 — 全域 UX
 // ══════════════════════════════════════════════════════════
@@ -5098,6 +5128,7 @@ function initDataActionDelegation() {
       setBMode:             () => setBMode(arg),
       setBType:             () => setBType(arg),
       // Panel D
+      resetDFilters:        () => resetDFilters(),
       setDSemMode:          () => setDSemMode(arg),
       setDType:             () => setDType(arg),
       setDView:             () => setDView(arg),
